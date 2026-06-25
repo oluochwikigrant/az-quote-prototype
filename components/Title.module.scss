@@ -1,0 +1,44 @@
+// ─── Header & Toolbar ────────────────────────────────────────────────────────
+.main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  gap: 1rem;
+
+  .title {
+    display: block;
+    font-size: calc(0.6vw + 0.7rem);
+    font-weight: bold;
+    color: #333333;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    width: fit-content;
+
+    .iconGroup {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 1rem;
+      align-self: flex-end;
+
+      .iconBtn {
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: #facc15;
+        cursor: pointer;
+      }
+    }
+  }
+}
+
+

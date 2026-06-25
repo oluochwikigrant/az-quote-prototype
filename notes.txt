@@ -1,0 +1,61 @@
+npx @better-auth/cli generate --config ./lib/auth.ts
+
+# generate the Prisma Client after schema changes
+npx prisma generate
+
+
+# open Prisma Studio (GUI to browse / edit your data)
+npx prisma studio
+
+
+# create + apply a migration in development (recommended dev flow)
+npx prisma migrate dev --name descriptive_name
+
+
+# apply pending migrations in production / CI
+npx prisma migrate deploy
+
+
+# push the Prisma schema directly to the DB (no migration files)
+npx prisma db push
+
+
+# pull an existing DB schema into schema.prisma (introspection)
+npx prisma db pull
+
+
+# reset the development DB (drops data and reapplies migrations)
+npx prisma migrate reset
+
+
+# mark migrations as applied / resolve migration history manually
+npx prisma migrate resolve --applied MIGRATION_NAME
+
+
+# run your seed script (configured in package.json under "prisma".seed)
+npx prisma db seed
+
+# CUSTOM BATABASE OPERATIONS
+npm run generate:mysql
+npm run generate:postgresql
+npm run migrate:mysql
+npm run migrate:postgresql
+
+
+#---------------DEPENDENCY UPDATES------------------------------------
+npm install -g npm-check-updates
+npm outdated
+ncu                                 # see which deps are outdated
+ncu -u                              # update package.json with latest version numbers
+npm install                         # install the new versions
+
+
+Add and commit with Git
+
+Add all new files. ----------------------------> git add --all
+
+Remove a file.---------------------------------> git rm <filename>
+
+Commit changes.--------------------------------> git commit -m 'update'
+
+Force Push ------------------------------------> git push -u origin main --force

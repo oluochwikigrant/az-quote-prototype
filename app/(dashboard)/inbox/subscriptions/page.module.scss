@@ -1,0 +1,72 @@
+// app/(dashboard)/inbox/subscriptions/page.module.scss
+
+$skyBlue: var(--skyBlue);
+$darkBlue: var(--darkBlue);
+$aqua: var(--aqua);
+$jungleGreen: var(--jungleGreen);
+$darkRed: var(--darkRed);
+$lightGray: var(--lightGray);
+
+.main {
+  position: relative;
+  width: 100%;
+}
+
+.container {
+  background: #ffffff;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  flex: 1;
+  margin: 1rem;
+  margin-top: 0;
+}
+
+// ─── Table Rows & Cells ─────────────────────────────────────────────────────
+.row {
+  border-bottom: 1px solid #e5e7eb;
+
+  &:first-child {
+    border-top: 1px solid #e5e7eb;
+  }
+
+  &:nth-child(even) {
+    background: $lightGray;
+  }
+
+  &.hoverHighlight:hover {
+    background: #dcd5ff;
+    color: rgb(128, 128, 128);
+    font-style: italic;
+  }
+
+  .cell {
+    width: fit-content;
+    padding: 1rem 0.5rem;
+
+    &:first-child {
+      padding: 0;
+    }
+
+    .link {
+      display: flex;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      padding: 1rem 0.5rem;
+    }
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.hideOnMobile {
+  display: none;
+
+  @media (min-width: 768px) {
+    display: table-cell;
+  }
+}

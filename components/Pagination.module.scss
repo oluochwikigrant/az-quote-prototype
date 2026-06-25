@@ -1,0 +1,69 @@
+// Pagination.module.scss
+
+$skyBlue: var(--skyBlue);
+$darkBlue: var(--darkBlue);
+$aqua: var(--aqua);
+$jungleGreen: var(--jungleGreen);
+$darkRed: var(--darkRed);
+$lightGray: var(--lightGray);
+$purple: var(--purple);
+$yellow: var(--yellow);
+$purple: var(--purple);
+$yellow: var(--yellow);
+
+.pagination {
+  width: 100%;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #000000;
+
+  .btn {
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    background-color: #97a6b8;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: opacity 0.2s ease, all 0.2s;
+    border: none;
+    outline: none;
+    cursor: pointer;
+
+    &.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &:hover {
+      opacity: 0.8;
+      color: white;
+      scale: 1.05;
+    }
+  }
+
+  .pages {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+
+    .pageBtn {
+      padding: 5px 8px;
+      border-radius: 0.125rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+
+      &.active {
+        background-color: #0ea5e9;
+        color: white;
+      }
+
+      &:hover {
+        scale: 1.1;
+      }
+    }
+  }
+}

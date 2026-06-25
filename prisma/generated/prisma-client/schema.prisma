@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "generated/prisma-client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model announcement {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  date        DateTime
+}
+
+model callrequest {
+  id             Int      @id @default(autoincrement())
+  client_name    String   @db.VarChar(255)
+  phone_number   String   @db.VarChar(50)
+  subject        String
+  time_requested DateTime
+}
+
+model enquiry {
+  id            Int      @id @default(autoincrement())
+  clientName    String?  @db.VarChar(255)
+  contact       String   @db.VarChar(255)
+  subject       String
+  message       String?
+  timeRequested DateTime
+}
+
+model payable_account {
+  id                  Int            @id @default(autoincrement()) @db.UnsignedInt
+  display_name        String         @unique(map: "idx_display_name") @db.VarChar(255)
+  payment_method_fkey String         @db.VarChar(45)
+  bank_name           String?        @db.VarChar(100)
+  account_name        String?        @db.VarChar(100)
+  account_number      String?        @db.VarChar(100)
+  business_number     String?        @db.VarChar(100)
+  buyGoods_number     String?        @db.VarChar(100)
+  payment_method      payment_method @relation(fields: [payment_method_fkey], references: [method], onDelete: NoAction, onUpdate: NoAction, map: "fkey_payment_method")
+  quotations          quotations[]
+
+  @@index([payment_method_fkey], map: "idx_payment_method")
+}
+
+model payment_method {
+  id              Int               @id @default(autoincrement())
+  method          String            @unique(map: "idx_payment_method") @db.VarChar(45)
+  payable_account payable_account[]
+}
+
+model quotation_request {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  tel       String   @db.Char(12)
+  subject   String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model review {
+  id         Int     @id @default(autoincrement())
+  clientName String? @db.VarChar(255)
+  contact    String? @db.VarChar(255)
+  message    String
+  rating     Int?
+}
+
+model sale_document_details {
+  id                 Int                @id @default(autoincrement())
+  document_type_fkey String             @unique(map: "idx_document_type") @db.VarChar(45)
+  header_image       Bytes?             @db.MediumBlob
+  footer_image       Bytes?             @db.MediumBlob
+  sale_document_type sale_document_type @relation(fields: [document_type_fkey], references: [document_type], onDelete: NoAction, onUpdate: NoAction, map: "fkey_document_type")
+}
+
+model sale_document_shared_assets {
+  id         Int    @id @default(autoincrement())
+  asset_type String @unique(map: "idx_asset_type") @db.VarChar(45)
+  image      Bytes  @db.MediumBlob
+}
+
+model sale_document_type {
+  id                                                                           Int                    @id @default(autoincrement())
+  document_type                                                                String                 @unique(map: "idx_document_type") @db.VarChar(45)
+  notification_sales_notification_sales_sale_document_typeTosale_document_type notification_sales[]   @relation("notification_sales_sale_document_typeTosale_document_type")
+  sale_document_details                                                        sale_document_details?
+  terms_conditions_rel                                                         terms_conditions[]     @relation("terms_conditions_sale_document_type_rel")
+}
+
+model services {
+  id                 Int                  @id @default(autoincrement()) @db.UnsignedInt
+  service            String               @unique(map: "idx_service") @db.VarChar(45)
+  created_at         DateTime             @default(now()) @db.Timestamp(0)
+  updated_at         DateTime             @default(now()) @db.Timestamp(0)
+  notification_sales notification_sales[]
+  terms_conditions   terms_conditions[]
+}
+
+model student {
+  id        String      @id
+  username  String      @unique(map: "idx_student_username")
+  name      String
+  surname   String
+  email     String?     @unique(map: "idx_student_email")
+  phone     String?     @unique(map: "idx_student_phone")
+  address   String
+  img       String?
+  bloodType String
+  sex       student_sex
+  createdAt DateTime    @default(now())
+  birthday  DateTime
+}
+
+model subscribers {
+  email String @id @db.VarChar(255)
+}
+
+model terms_conditions {
+  id                     Int                @id @default(autoincrement()) @db.UnsignedInt
+  service                Int                @db.UnsignedInt
+  sale_document_type     Int
+  terms                  String             @db.Text
+  created_at             DateTime           @default(now()) @db.Timestamp(0)
+  updated_at             DateTime           @default(now()) @db.Timestamp(0)
+  sale_document_type_rel sale_document_type @relation("terms_conditions_sale_document_type_rel", fields: [sale_document_type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fkey_sale_document_type")
+  services               services           @relation(fields: [service], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fkey_service")
+
+  @@unique([service, sale_document_type], map: "idx_unique_service_sale_doc_type")
+  @@index([sale_document_type], map: "idx_sale_document_type")
+  @@index([service], map: "idx_service")
+}
+
+model user {
+  user_id            String               @id @db.VarChar(40)
+  system_role        Int                  @db.UnsignedInt
+  position           String               @db.VarChar(45)
+  email              String               @unique(map: "idx_email") @db.VarChar(255)
+  firstName          String               @db.VarChar(255)
+  lastName           String               @db.VarChar(255)
+  phone              String               @unique(map: "phone_UNIQUE") @db.VarChar(50)
+  signature          Bytes                @db.Blob
+  passport           Bytes?               @db.Blob
+  createdAt          DateTime             @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime             @default(now()) @db.Timestamp(0)
+  notification_sales notification_sales[]
+  roles              roles                @relation(fields: [system_role], references: [role_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role")
+
+  @@index([system_role], map: "fk_role_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model notification_sales {
+  reference_id                                                                 String             @id @unique(map: "reference_id_UNIQUE") @db.VarChar(14)
+  role                                                                         Int                @db.UnsignedInt
+  sale_document_type                                                           Int
+  service                                                                      Int                @db.UnsignedInt
+  created_at                                                                   DateTime           @default(now()) @db.DateTime(0)
+  is_active                                                                    Int                @default(1) @db.TinyInt
+  replied_by                                                                   String?            @db.VarChar(40)
+  replied_at                                                                   DateTime?          @db.DateTime(0)
+  roles                                                                        roles              @relation(fields: [role], references: [role_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role_to_view_sale_notification")
+  sale_document_type_notification_sales_sale_document_typeTosale_document_type sale_document_type @relation("notification_sales_sale_document_typeTosale_document_type", fields: [sale_document_type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_sale_document_type_notification")
+  services                                                                     services           @relation(fields: [service], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_sale_notification")
+  user                                                                         user?              @relation(fields: [replied_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_reading_notification")
+
+  @@index([role], map: "fk_role_idx")
+  @@index([sale_document_type], map: "fk_sale_document_type_notification_idx")
+  @@index([service], map: "fk_sale_notification_idx")
+  @@index([replied_by], map: "fk_user_reading_notification_idx")
+}
+
+model roles {
+  role_id            Int                  @id @default(autoincrement()) @db.UnsignedInt
+  role               String               @unique(map: "role_UNIQUE") @db.VarChar(15)
+  notification_sales notification_sales[]
+  user               user[]
+}
+
+model clients {
+  client_id  Int       @id @default(autoincrement()) @db.UnsignedInt
+  name       String    @db.VarChar(255)
+  address    String?   @db.Text
+  contact    String    @db.VarChar(50)
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  updated_at DateTime? @default(now()) @db.Timestamp(0)
+}
+
+model company_details {
+  id               Int     @id @default(autoincrement()) @db.UnsignedInt
+  company_name     String  @unique(map: "company_name_UNIQUE") @db.VarChar(45)
+  kra_pin          String? @unique(map: "kra_pin_UNIQUE") @db.VarChar(45)
+  logo             Bytes?  @db.Blob
+  postal_address   String? @db.VarChar(45)
+  physical_address String  @db.VarChar(45)
+  primary_email    String  @unique(map: "primary_email_UNIQUE") @db.VarChar(45)
+  secondary_email  String? @unique(map: "secondary_email_UNIQUE") @db.VarChar(45)
+  primary_phone    String  @unique(map: "primary_phone_UNIQUE") @db.VarChar(9)
+  secondary_phone  String? @unique(map: "secondary_phone_UNIQUE") @db.VarChar(9)
+}
+
+model quotations {
+  id                      Int                 @id @default(autoincrement()) @db.UnsignedInt
+  quotation_number        String              @unique(map: "document_number_UNIQUE") @db.VarChar(14)
+  qr_code                 String              @unique(map: "qr_code_UNIQUE") @db.VarChar(14)
+  description             String              @db.VarChar(70)
+  client_name             String              @db.VarChar(40)
+  client_address          String?             @db.VarChar(40)
+  client_contact          String              @db.VarChar(40)
+  labor                   Int?                @default(0) @db.UnsignedInt
+  shipping                Int?                @default(0) @db.UnsignedInt
+  tax_type                quotations_tax_type
+  tax_rate                Decimal             @db.Decimal(2, 2)
+  terms_conditions        String              @db.Text
+  payment_account_enabled Boolean             @default(false)
+  payment_account_id      Int?                @db.UnsignedInt
+  served_by_name          String              @db.VarChar(255)
+  served_by_position      String              @db.VarChar(255)
+  served_by_signature     Bytes               @db.Blob
+  created_at              DateTime            @default(now()) @db.Timestamp(0)
+  updated_at              DateTime?           @default(now()) @db.Timestamp(0)
+  quotation_items         quotation_items[]
+  payable_account         payable_account?    @relation(fields: [payment_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_account_details_id")
+
+  @@index([payment_account_id], map: "fk_account_details_id_idx")
+}
+
+model quotation_items {
+  item_id             BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  quotation_reference Int?        @db.UnsignedInt
+  item_description    String      @db.VarChar(70)
+  item_quantity       Int         @db.UnsignedInt
+  item_unit_price     Decimal     @db.Decimal(15, 2)
+  quotations          quotations? @relation(fields: [quotation_reference], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_quotation_refered")
+
+  @@index([quotation_reference], map: "fk_quotation_reffered_idx")
+}
+
+enum student_sex {
+  MALE
+  FEMALE
+}
+
+enum quotations_tax_type {
+  inclusive
+  exclusive
+  nill
+}

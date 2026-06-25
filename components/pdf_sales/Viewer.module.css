@@ -1,0 +1,125 @@
+/* -------------------------------------------------------PDF MODAL FORMATING------------------------- */
+
+.pdf_modal_container {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 0);
+  top: 0;
+  width: 100%;
+  max-width: 700px;
+  height: 100%;
+  background: rgb(255, 255, 255);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  margin: auto;
+  z-index: 1;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.pdf_modal_content {
+  position: relative;
+  right: -100%;
+  width: 100%;
+  max-width: 700px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  row-gap: 10px;
+  animation-duration: 0.5s;
+  animation-fill-mode: forwards;
+  animation-name: slideIn;
+  padding: 20px 0;
+}
+
+@keyframes slideIn {
+  0% {
+    right: -100%;
+  }
+  100% {
+    right: 0;
+  }
+}
+
+.Viewer {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+  width: 100%;
+  max-width: 700px;
+  background-color: rgb(145, 145, 145);
+}
+
+.close_pdf_modal_button {
+  appearance: none;
+  background-color: rgb(243, 243, 243);
+  border-radius: 40em;
+  border-style: none;
+  box-shadow: orange 0 -12px 6px inset;
+  box-sizing: border-box;
+  color: rgb(0, 0, 0);
+  cursor: pointer;
+  display: inline-block;
+  font-family: -apple-system, sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.24px;
+  margin: 0;
+  outline: none;
+  padding: 15px 70px;
+  quotes: auto;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.15s;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.close_pdf_modal_button:hover {
+  background-color: #ffc229;
+  box-shadow: #ff6314 0 -6px 8px inset;
+  transform: scale(1.125);
+}
+
+.close_pdf_modal_button:active {
+  transform: scale(1.025);
+}
+
+.download_pdf_button {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  width: 100%;
+  padding: 20px;
+  background-color: #4caf50;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+.download_pdf_button:hover {
+  color: #4caf50;
+  background-color: white;
+}
+
+.download_pdf_button_icon {
+  height: 100%;
+  width: auto;
+  margin: 0 2rem;
+}
