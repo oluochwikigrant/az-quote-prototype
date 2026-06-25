@@ -1,9 +1,8 @@
-// app/(dashboard)/list/reviews/page.tsx
+// app/(dashboard)/inbox/reviews/page.tsx
 
 import React from "react";
-import prisma from "@/lib/prisma";
+import { reviews as reviewsData, Review } from "@/lib/dummyData";
 import { ITEM_PER_PAGE } from "@/lib/settings";
-import { review as ReviewModel } from "@/prisma/generated/prisma-client";
 import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
@@ -13,48 +12,43 @@ import Link from "next/link";
 import TitleBar from "@/components/TitleBar";
 
 interface ReviewListPageProps {
-  // Next.js 15+: searchParams is a Promise
   searchParams: Promise<{
     page?: string;
     search?: string;
-    review?: string; // index for detail modal
+    review?: string;
   }>;
 }
 
 export default async function ReviewsPage({
   searchParams,
 }: ReviewListPageProps) {
-  // 1. Auth & role (adjust as needed)
-  // const { userId, sessionClaims } = auth();
   const role = "admin";
 
-  // 2. Await and destructure searchParams
   const { page = "1", search: searchTerm, review } = await searchParams;
   const pageNum = parseInt(page, 10) || 1;
 
-  // 3. Build Prisma filter
-  const where: any = {};
+  // Filter reviews
+  let filtered = [...reviewsData];
   if (searchTerm) {
-    // search in clientName, contact, or message
-    where.OR = [
-      { clientName: { contains: searchTerm, mode: "insensitive" } },
-      { contact: { contains: searchTerm, mode: "insensitive" } },
-      { message: { contains: searchTerm, mode: "insensitive" } },
-    ];
+    filtered = filtered.filter(
+      r =>
+        (r.clientName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (r.contact?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        r.message.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   }
 
-  // 4. Fetch data
-  const [reviews, total] = await prisma.$transaction([
-    prisma.review.findMany({
-      where,
-      take: ITEM_PER_PAGE,
-      skip: ITEM_PER_PAGE * (pageNum - 1),
-      orderBy: { id: "desc" },
-    }),
-    prisma.review.count({ where }),
-  ]);
+  // Sort by id descending
+  filtered.sort((a, b) => b.id - a.id);
 
-  // 5. Modal selection
+  // Paginate
+  const total = filtered.length;
+  const reviews = filtered.slice(
+    ITEM_PER_PAGE * (pageNum - 1),
+    ITEM_PER_PAGE * pageNum
+  );
+
+  // Modal selection
   const idx = parseInt(review ?? "-1", 10);
   const selected = idx >= 0 && idx < reviews.length ? reviews[idx] : null;
   const reviewData: ReviewData | null = selected
@@ -66,10 +60,9 @@ export default async function ReviewsPage({
       }
     : null;
 
-  // Helper to build link preserving page & search
-  const buildDetailHref = (idx: number) => {
+  const buildDetailHref = (idxRow: number) => {
     const params = new URLSearchParams();
-    params.set("review", String(idx));
+    params.set("review", String(idxRow));
     params.set("page", String(pageNum));
     if (searchTerm) {
       params.set("search", searchTerm);
@@ -80,13 +73,8 @@ export default async function ReviewsPage({
   return (
     <main className={styles.main}>
       <div className={styles.container}>
-        {/* Title */}
         <TitleBar title="Reviews" />
 
-        {/* (Optional) Add a search input above the table if desired.
-            E.g. a small form that submits to this same page with ?search=... */}
-
-        {/* Table */}
         <Table
           columns={[
             { header: "Client Name", accessor: "clientName" },
@@ -111,13 +99,12 @@ export default async function ReviewsPage({
                 ]
               : []),
           ]}
-          data={reviews as ReviewModel[]}
+          data={reviews}
           renderRow={(item, idxRow) => (
             <tr
               key={item.id}
               className={`${styles.row} ${styles.hoverHighlight}`}
             >
-              {/* Client Name with link to open detail modal */}
               <td className={styles.cell}>
                 <Link
                   href={buildDetailHref(idxRow)}
@@ -127,24 +114,17 @@ export default async function ReviewsPage({
                   {item.clientName || "—"}
                 </Link>
               </td>
-
-              {/* Contact */}
               <td className={`${styles.cell} ${styles.hideOnMobile}`}>
                 {item.contact || "—"}
               </td>
-
-              {/* Rating */}
               <td className={styles.cell}>
                 {item.rating != null ? item.rating : "N/A"}
               </td>
-
-              {/* Message (truncated for table?) */}
               <td className={`${styles.cell} ${styles.hideOnMobile}`}>
                 {item.message.length > 50
                   ? item.message.slice(0, 50) + "…"
                   : item.message}
               </td>
-
               {role === "admin" && (
                 <td className={`${styles.cell} ${styles.hideOnMobile}`}>
                   <div className={styles.actions}>
@@ -157,17 +137,9 @@ export default async function ReviewsPage({
           )}
         />
 
-        {/* Pagination */}
-        {/* 
-          Ensure your Pagination component preserves search param if needed.
-          If Pagination accepts basePath or a callback, adjust accordingly.
-          Here we pass page and count; if Pagination internally builds links,
-          you may need to modify it to include `search` in query string.
-        */}
         <Pagination page={pageNum} count={total} />
       </div>
 
-      {/* Detail Modal */}
       {reviewData && <ReviewView isOpen={true} data={reviewData} />}
     </main>
   );

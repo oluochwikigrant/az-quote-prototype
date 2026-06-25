@@ -1,9 +1,8 @@
-// app/(dashboard)/list/announcements/page.tsx
+// app/(dashboard)/inbox/announcements/page.tsx
 
 import React from "react";
-import prisma from "@/lib/prisma";
+import { announcements as announcementsData, Announcement } from "@/lib/dummyData";
 import { ITEM_PER_PAGE } from "@/lib/settings";
-import { announcement as AnnouncementModel } from "@/prisma/generated/prisma-client";
 import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
@@ -15,49 +14,43 @@ import Link from "next/link";
 import TitleBar from "@/components/TitleBar";
 
 interface AnnouncementListPageProps {
-  // Next.js 15+: searchParams is a Promise
   searchParams: Promise<{
     page?: string;
     search?: string;
-    announcement?: string; // index for detail modal
+    announcement?: string;
   }>;
 }
 
 export default async function AnnouncementsPage({
   searchParams,
 }: AnnouncementListPageProps) {
-  // 1. Auth & role (adjust if needed)
-  // const { userId, sessionClaims } = auth();
   const role = "admin";
 
-  // 2. Await and destructure searchParams
   const { page = "1", search: searchTerm, announcement } = await searchParams;
   const pageNum = parseInt(page, 10) || 1;
 
-  // 3. Build Prisma filter: search in title or description if provided
-  const where: any = {};
+  // Filter announcements
+  let filtered = [...announcementsData];
   if (searchTerm) {
-    where.OR = [
-      { title: { contains: searchTerm, mode: "insensitive" } },
-      { description: { contains: searchTerm, mode: "insensitive" } },
-    ];
+    filtered = filtered.filter(
+      a => a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           a.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   }
 
-  // 4. Fetch data: paginated, ordered by date descending (newest first)
-  const [announcements, total] = await prisma.$transaction([
-    prisma.announcement.findMany({
-      where,
-      take: ITEM_PER_PAGE,
-      skip: ITEM_PER_PAGE * (pageNum - 1),
-      orderBy: { date: "desc" },
-    }),
-    prisma.announcement.count({ where }),
-  ]);
+  // Sort by date descending
+  filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // 5. Modal selection by index in current page results
+  // Paginate
+  const total = filtered.length;
+  const announcements = filtered.slice(
+    ITEM_PER_PAGE * (pageNum - 1),
+    ITEM_PER_PAGE * pageNum
+  );
+
+  // Modal selection
   const idx = parseInt(announcement ?? "-1", 10);
-  const selected =
-    idx >= 0 && idx < announcements.length ? announcements[idx] : null;
+  const selected = idx >= 0 && idx < announcements.length ? announcements[idx] : null;
   const announcementData: AnnouncementData | null = selected
     ? {
         title: selected.title,
@@ -67,7 +60,6 @@ export default async function AnnouncementsPage({
       }
     : null;
 
-  // Helper to build detail-link href preserving page & search
   const buildDetailHref = (idxRow: number) => {
     const params = new URLSearchParams();
     params.set("announcement", String(idxRow));
@@ -81,10 +73,8 @@ export default async function AnnouncementsPage({
   return (
     <main className={styles.main}>
       <div className={styles.container}>
-        {/* Title */}
         <TitleBar title="Announcements" />
 
-        {/* Table */}
         <Table
           columns={[
             { header: "Title", accessor: "title" },
@@ -104,13 +94,12 @@ export default async function AnnouncementsPage({
                 ]
               : []),
           ]}
-          data={announcements as AnnouncementModel[]}
+          data={announcements}
           renderRow={(item, idxRow) => (
             <tr
               key={item.id}
               className={`${styles.row} ${styles.hoverHighlight}`}
             >
-              {/* Title with link to open detail modal */}
               <td className={styles.cell}>
                 <Link
                   href={buildDetailHref(idxRow)}
@@ -120,8 +109,6 @@ export default async function AnnouncementsPage({
                   {item.title}
                 </Link>
               </td>
-
-              {/* Date formatted */}
               <td className={styles.cell}>
                 {new Intl.DateTimeFormat("en-US", {
                   year: "numeric",
@@ -129,29 +116,16 @@ export default async function AnnouncementsPage({
                   day: "2-digit",
                 }).format(item.date)}
               </td>
-
-              {/* Description truncated on mobile? hideOnMobile wraps it */}
               <td className={`${styles.cell} ${styles.hideOnMobile}`}>
                 {item.description.length > 60
                   ? item.description.slice(0, 60) + "…"
                   : item.description}
               </td>
-
               {role === "admin" && (
                 <td className={`${styles.cell} ${styles.hideOnMobile}`}>
                   <div className={styles.actions}>
-                    {/* Update action: ensure your FormContainer handles announcement */}
-                    <FormContainer
-                      table="announcement"
-                      type="update"
-                      data={item}
-                    />
-                    {/* Delete action */}
-                    <FormContainer
-                      table="announcement"
-                      type="delete"
-                      id={item.id}
-                    />
+                    <FormContainer table="announcement" type="update" data={item} />
+                    <FormContainer table="announcement" type="delete" id={item.id} />
                   </div>
                 </td>
               )}
@@ -159,14 +133,10 @@ export default async function AnnouncementsPage({
           )}
         />
 
-        {/* Pagination */}
         <Pagination page={pageNum} count={total} />
       </div>
 
-      {/* Detail Modal */}
-      {announcementData && (
-        <AnnouncementView isOpen={true} data={announcementData} />
-      )}
+      {announcementData && <AnnouncementView isOpen={true} data={announcementData} />}
     </main>
   );
 }

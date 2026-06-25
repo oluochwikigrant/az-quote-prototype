@@ -1,14 +1,11 @@
-// app\api\view_quotation\route.ts
-
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { quotations, quotationItems, payableAccounts } from "@/lib/dummyData";
 import {
   QuoteData,
   ItemRecord,
   AccountDetail,
 } from "@/components/pdf_sales/documentDataType";
-
-import type { payable_account as PayableAccount } from "@/prisma/generated/prisma-client";
+import { PayableAccount } from "@/lib/dummyData";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -29,13 +26,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const quotation = await prisma.quotations.findUnique({
-      where: { id },
-      include: {
-        quotation_items: true,
-        payable_account: true,
-      },
-    });
+    const quotation = quotations.find(q => q.id === id);
 
     if (!quotation) {
       return NextResponse.json(
@@ -43,6 +34,11 @@ export async function GET(request: Request) {
         { status: 404 }
       );
     }
+
+    const relatedItems = quotationItems.filter(i => i.quotation_reference === id);
+    const payableAccount = quotation.payment_account_id
+      ? payableAccounts.find(a => a.id === quotation.payment_account_id)
+      : null;
 
     // Dynamic mapping of account fields
     const accountFieldMap: Array<[keyof PayableAccount, string]> = [
@@ -56,14 +52,14 @@ export async function GET(request: Request) {
 
     const accountDetails: AccountDetail[] = quotation.payment_account_enabled
       ? accountFieldMap.reduce<AccountDetail[]>((arr, [key, label]) => {
-          const val = quotation.payable_account?.[key];
+          const val = payableAccount?.[key];
           if (val) arr.push({ label, value: String(val) });
           return arr;
         }, [])
       : [];
 
     // convert BigInt fields to strings
-    const quoteItems: ItemRecord[] = quotation.quotation_items.map((item) => ({
+    const quoteItems: ItemRecord[] = relatedItems.map((item, idx) => ({
       code: Number(item.item_id),
       description: item.item_description.toString(),
       quantity: Number(item.item_quantity),
@@ -89,6 +85,8 @@ export async function GET(request: Request) {
 
     // Quote Data
     const Quote: QuoteData = {
+      documentType: "quotation",
+      documentName: "Quotation",
       id: quotation.id,
       quotation_number: quotation.quotation_number,
       qr_code: quotation.qr_code,
@@ -107,7 +105,7 @@ export async function GET(request: Request) {
       quoteItems: quoteItems,
       served_by_name: quotation.served_by_name,
       served_by_position: quotation.served_by_position,
-      served_by_signature: quotation.served_by_name,
+      served_by_signature: quotation.served_by_signature,
       created_at: quotation.created_at.toISOString(),
       updated_at: quotation.updated_at?.toISOString(),
       subtotal: subtotal,

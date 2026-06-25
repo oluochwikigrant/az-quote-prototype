@@ -1,24 +1,17 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { companyDetails } from "@/lib/dummyData";
 
 export async function GET() {
-  const details = await prisma.company_details.findFirst();
-  if (!details) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  const companyDetails = {
-    id: details.id,
-    companyName: details.company_name,
-    kraPin: details.kra_pin,
-    postalAddress: details.postal_address,
-    physicalAddress: details.physical_address,
-    primaryEmail: details.primary_email,
-    secondaryEmail: details.secondary_email,
-    primaryPhone: details.primary_phone,
-    secondaryPhone: details.secondary_phone,
-    logo: details.logo ? Buffer.from(details.logo).toString("base64") : null,
-  };
-
-  return NextResponse.json(companyDetails);
+  return NextResponse.json({
+    id: companyDetails.id,
+    companyName: companyDetails.company_name,
+    kraPin: companyDetails.kra_pin,
+    postalAddress: companyDetails.postal_address,
+    physicalAddress: companyDetails.physical_address,
+    primaryEmail: companyDetails.primary_email,
+    secondaryEmail: companyDetails.secondary_email,
+    primaryPhone: companyDetails.primary_phone,
+    secondaryPhone: companyDetails.secondary_phone,
+    logo: companyDetails.logo,
+  });
 }

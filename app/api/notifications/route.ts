@@ -1,29 +1,12 @@
-// app/api/notifications/route.ts
-
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { notificationSales } from "@/lib/dummyData";
 
-/**
- * GET /api/notifications
- * Returns JSON: { count: number }
- */
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    // Query Prisma for the count of active notifications for this role.
-    const notifications = await prisma.notification_sales.count({
-      where: {
-        // role: 1,
-        is_active: 1,
-      },
-    });
-
-    // Return JSON
-    return NextResponse.json({ notifications });
+    const count = notificationSales.filter(n => n.is_active === 1).length;
+    return NextResponse.json({ notifications: count });
   } catch (error: any) {
     console.error("Error in GET /api/notifications:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

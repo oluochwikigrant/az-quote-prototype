@@ -1,16 +1,9 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { payableAccounts } from "@/lib/dummyData";
 
 export async function GET() {
-  const accounts = await prisma.payable_account.findMany({
-    select: {
-      id: true,
-      display_name: true, // Prisma should match the column name
-    },
-  });
-
-  const options = accounts.map((acc) => ({
-    value: acc.id.toString(), // ensure it's a string for select
+  const options = payableAccounts.map((acc) => ({
+    value: acc.id.toString(),
     label: acc.display_name,
   }));
 

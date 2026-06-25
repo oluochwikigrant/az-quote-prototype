@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import type { payable_account as PayableAccount } from "@/prisma/generated/prisma-client";
+import { payableAccounts, saleDocumentTypes, termsConditions } from "@/lib/dummyData";
+import { PayableAccount } from "@/lib/dummyData";
 import { randomStringGenerator } from "@/utils/randomStringGenerator";
 import {
   AccountDetail,
@@ -33,7 +33,6 @@ export async function POST(request: NextRequest) {
         quantity: number;
         unitPrice: number;
       }) => ({
-        // code: Number(item.item_id),
         description: item.description.toString(),
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
@@ -41,15 +40,11 @@ export async function POST(request: NextRequest) {
       })
     );
 
-    // Dynamic mapping of account fields
-
     // load payable account if enabled
     let accountDetails: AccountDetail[] = [];
 
     if (previewData.paymentAccountEnabled) {
-      const account = await prisma.payable_account.findUnique({
-        where: { id: Number(previewData.payableAccountID) },
-      });
+      const account = payableAccounts.find(a => a.id === Number(previewData.payableAccountID));
 
       if (!account) {
         return new Response(JSON.stringify({ error: "Account not found" }), {
@@ -94,10 +89,7 @@ export async function POST(request: NextRequest) {
       previewData.termsConditions = previewData.customConditions;
     } else {
       // Look up the sale_document_type row to get its numeric ID
-      const saleTypeRecord = await prisma.sale_document_type.findUnique({
-        where: { document_type: previewData.documentType },
-        select: { id: true },
-      });
+      const saleTypeRecord = saleDocumentTypes.find(s => s.document_type === previewData.documentType);
 
       if (!saleTypeRecord) {
         return NextResponse.json(
@@ -122,24 +114,16 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const termsConditions = await prisma.terms_conditions.findUnique({
-        where: {
-          service_sale_document_type: {
-            service: serviceId,
-            sale_document_type: saleDocTypeId,
-          },
-        },
-        select: { terms: true },
-      });
+      const termsRecord = termsConditions.find(
+        t => t.service === serviceId && t.sale_document_type === saleDocTypeId
+      );
 
-      if (!termsConditions) {
-        return NextResponse.json(
-          { error: "No terms & conditions found for that combo." },
-          { status: 404 }
-        );
+      if (!termsRecord) {
+        // Use default terms if not found
+        previewData.termsConditions = "Payment within 30 days. Valid for 90 days from date of issue.";
+      } else {
+        previewData.termsConditions = termsRecord.terms;
       }
-
-      previewData.termsConditions = termsConditions.terms;
     }
 
     // Calculate subtotal from previewData.items

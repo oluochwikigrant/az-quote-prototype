@@ -6,7 +6,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { PDFDocument } from "pdf-lib";
 import fs from "fs";
 import path from "path";
-import prisma from "@/lib/prisma";
+import { users, saleDocumentSharedAssets, quotations, quotationItems, createQuotation, createQuotationItems } from "@/lib/dummyData";
 import DocumentTemplate from "@/components/pdf_sales/Template";
 import GenerateBarcodeBase64 from "@/components/Bar_QR_Generator/BarCode";
 import { format } from "date-fns";
@@ -29,15 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Load Teller Info
-    const TellerInfo = await prisma.user.findUnique({
-      where: { user_id: "user_2p9RFWQ4UHgUpcBmk0VvyCX2Djg" },
-      select: {
-        firstName: true,
-        lastName: true,
-        signature: true,
-        position: true,
-      },
-    });
+    const TellerInfo = users.find(u => u.user_id === "user_2p9RFWQ4UHgUpcBmk0VvyCX2Djg");
     if (!TellerInfo) {
       return new Response(JSON.stringify({ error: "Teller not found" }), {
         status: 404,
@@ -45,10 +37,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 3. Convert signature buffer → Base64 string
-    const signatureBase64 = `data:image/png;base64,${Buffer.from(
-      TellerInfo.signature
-    ).toString("base64")}`;
+    // 3. Convert signature to Base64 string
+    const signatureBase64 = TellerInfo.signature
+      ? `data:image/png;base64,${TellerInfo.signature}`
+      : "";
 
     const tellerInfoArray = {
       TellerName: `${TellerInfo.firstName} ${TellerInfo.lastName}`,
@@ -62,78 +54,57 @@ export async function POST(request: NextRequest) {
     documentData.date = format(now, "dd MMM yyyy");
 
     // 5. Load shared assets (header, footer, stamp)
-    const rows = await prisma.sale_document_shared_assets.findMany({
-      where: {
-        asset_type: { in: ["header_image", "footer_image", "official_stamp"] },
-      },
-      select: { asset_type: true, image: true },
-    });
-    if (rows.length !== 3) {
-      const found = rows.map((r) => r.asset_type).join(",");
-      throw new Error(`Expected 3 assets but found: ${found}`);
-    }
-    const sharedMap = rows.reduce<Record<string, Buffer>>(
-      (map, { asset_type, image }) => {
-        map[asset_type] = Buffer.from(image);
-        return map;
-      },
-      {}
+    const assets = saleDocumentSharedAssets.filter(a =>
+      ["header_image", "footer_image", "official_stamp"].includes(a.asset_type)
     );
-    const toPngB64 = (buf: Buffer) =>
-      `data:image/png;base64,${buf.toString("base64")}`;
+
+    const toPngB64 = (img: string) => img ? `data:image/png;base64,${img}` : "";
+
+    const headerAsset = assets.find(a => a.asset_type === "header_image");
+    const footerAsset = assets.find(a => a.asset_type === "footer_image");
+    const stampAsset = assets.find(a => a.asset_type === "official_stamp");
+
     documentData.shared_assets = {
-      header: toPngB64(sharedMap["header_image"]),
-      footer: toPngB64(sharedMap["footer_image"]),
-      stamp: toPngB64(sharedMap["official_stamp"]),
+      header: headerAsset?.image || "",
+      footer: footerAsset?.image || "",
+      stamp: stampAsset?.image || "",
     };
 
     // 6. Generate barcode
     const barcodeB64 = await GenerateBarcodeBase64(documentData.qr_code);
     documentData.shared_assets.barcode = barcodeB64;
 
-    // 7. If this is a quotation, persist it in the DB
+    // 7. If this is a quotation, persist it in memory
     if (documentType === "quotation") {
-      const quotation = await prisma.quotations.create({
-        data: {
-          quotation_number: documentData.quotation_number,
-          qr_code: documentData.qr_code,
-          description: documentData.description,
-          client_name: documentData.client_name,
-          client_address: documentData.client_address || null,
-          client_contact: documentData.client_contact,
-          labor: documentData.labor || 0,
-          shipping: documentData.shipping || 0,
-          tax_type: documentData.tax_type,
-          tax_rate: documentData.tax_rate,
-          terms_conditions: documentData.terms_conditions,
-          payment_account_enabled: documentData.payment_account_enabled,
-          payment_account_id: Number(documentData.payment_account_id || 0),
-          served_by_name: tellerInfoArray.TellerName,
-          served_by_position: tellerInfoArray.Position,
-          served_by_signature: Buffer.from(TellerInfo.signature),
-        },
+      const newQuotation = await createQuotation({
+        quotation_number: documentData.quotation_number,
+        qr_code: documentData.qr_code,
+        description: documentData.description,
+        client_name: documentData.client_name,
+        client_address: documentData.client_address || null,
+        client_contact: documentData.client_contact,
+        labor: documentData.labor || 0,
+        shipping: documentData.shipping || 0,
+        tax_type: documentData.tax_type,
+        tax_rate: documentData.tax_rate,
+        terms_conditions: documentData.terms_conditions,
+        payment_account_enabled: documentData.payment_account_enabled,
+        payment_account_id: Number(documentData.payment_account_id || 0),
+        served_by_name: tellerInfoArray.TellerName,
+        served_by_position: tellerInfoArray.Position,
+        served_by_signature: signatureBase64,
+        created_at: new Date(),
       });
 
-      // 7.2 Insert all item‐lines; if it blows up, clean up the parent
-      try {
-        await prisma.quotation_items.createMany({
-          data: documentData.quoteItems.map((item: any) => ({
-            // very important: link back to the new quotation
-            quotation_reference: quotation.id,
-            item_description: item.description,
-            item_quantity: parseInt(item.quantity),
-            item_unit_price: parseFloat(item.unitPrice),
-          })),
-          // if you want to guard against duplicates you can set skipDuplicates: true
-        });
-      } catch (itemError) {
-        // rollback: remove the quotation you just created
-        await prisma.quotations.delete({
-          where: { id: quotation.id },
-        });
-        // rethrow so your outer `catch` returns 500
-        throw itemError;
-      }
+      // Insert all item lines
+      await createQuotationItems(
+        documentData.quoteItems.map((item: any) => ({
+          quotation_reference: newQuotation.id,
+          item_description: item.description,
+          item_quantity: parseInt(item.quantity),
+          item_unit_price: parseFloat(item.unitPrice),
+        }))
+      );
     }
 
     // 8. Render the PDF
@@ -147,7 +118,7 @@ export async function POST(request: NextRequest) {
     // 9. Load your generated PDF into pdf-lib
     const mainPdf = await PDFDocument.load(pdfBuffer);
 
-    // 10. Load the “ad” PDF from disk (or fetch it from wherever you store it)
+    // 10. Load the "ad" PDF from disk
     const adPdfPath = path.resolve(
       process.cwd(),
       "public/documents/ads/ad.pdf"
@@ -172,7 +143,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("❌ PDF generation or DB error:", err);
+    console.error("PDF generation error:", err);
     return new Response(JSON.stringify({ error: "Internal Server Error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

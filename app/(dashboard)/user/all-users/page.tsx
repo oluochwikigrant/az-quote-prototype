@@ -16,8 +16,6 @@ interface AllUsersPageProps {
 export default async function AllUsersPage({
   searchParams,
 }: AllUsersPageProps) {
-  // 1. Auth & Role
-  // ------------------------------------------------------ const { userId, sessionClaims } = auth();
   const role = "admin";
 
   // 2. Parse query params
@@ -40,8 +38,8 @@ export default async function AllUsersPage({
     firstName: u.firstName || "-",
     lastName: u.lastName || "-",
     userName: u.username || "-",
-    email: u.emailAddresses[0]?.emailAddress || "-",
-    role: (u.publicMetadata as { role?: string })?.role || "undefined",
+    email: u.emailAddresses?.[0]?.emailAddress || u.email || "-",
+    role: u.publicMetadata?.role || u.role || "undefined",
     createdAt: u.createdAt,
   }));
 
@@ -49,7 +47,7 @@ export default async function AllUsersPage({
     <main className={styles.main}>
       <div className={styles.container}>
         {/* Title */}
-        <TitleBar title="Announcements" />
+        <TitleBar title="Users" />
 
         <Table
           columns={[

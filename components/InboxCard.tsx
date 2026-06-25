@@ -1,5 +1,11 @@
 // components/InboxCard.tsx
-import prisma from "@/lib/prisma";
+import {
+  callRequests,
+  reviews,
+  subscribers,
+  enquiries,
+  quotationRequests,
+} from "@/lib/dummyData";
 import { MdOutlineMoreHoriz } from "react-icons/md";
 import styles from "./InboxCard.module.scss";
 
@@ -13,15 +19,15 @@ const InboxCard = async ({
     | "enquiry"
     | "quotation_request";
 }) => {
-  const modelMap: Record<typeof type, any> = {
-    quotation_request: prisma.quotation_request,
-    callrequest: prisma.callrequest,
-    review: prisma.review,
-    subscription: prisma.subscribers,
-    enquiry: prisma.enquiry,
+  const countMap: Record<typeof type, number> = {
+    quotation_request: quotationRequests.length,
+    callrequest: callRequests.length,
+    review: reviews.length,
+    subscription: subscribers.length,
+    enquiry: enquiries.length,
   };
 
-  const data = await modelMap[type].count();
+  const data = countMap[type];
 
   return (
     <div className={styles.card}>

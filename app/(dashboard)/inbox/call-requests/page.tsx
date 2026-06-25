@@ -1,80 +1,66 @@
-// /app/(dashboard)/list/call-requests/page.tsx
+// app/(dashboard)/inbox/call-requests/page.tsx
 import React from "react";
-import prisma from "@/lib/prisma";
+import { callRequests as callRequestsData, CallRequest } from "@/lib/dummyData";
 import { ITEM_PER_PAGE } from "@/lib/settings";
-import { callrequest as CallRequestModel } from "@/prisma/generated/prisma-client";
 import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import styles from "./page.module.scss";
-// If you want a detail-view modal, you can create a simple component like CallRequestView:
 import CallRequestView, { CallRequestData } from "@/components/CallRequestView";
 import Link from "next/link";
 import TitleBar from "@/components/TitleBar";
 
 interface CallRequestListPageProps {
-  // Mark searchParams as a Promise in Next.js 15+
   searchParams: Promise<{
     page?: string;
     search?: string;
-    detail?: string; // index for opening detail modal
+    detail?: string;
   }>;
 }
 
 export default async function NewCallRequests({
   searchParams,
 }: CallRequestListPageProps) {
-  // 1. Auth & role (example)
-  // ------------------------------------------------------
-  // const { userId, sessionClaims } = auth();
   const role = "admin";
 
-  // 2. Await and destructure searchParams
   const { page = "1", search: subjectFilter, detail } = await searchParams;
   const pageNum = parseInt(page, 10);
 
-  // 3. Build Prisma filter
-  const where: any = {};
+  // Filter call requests
+  let filtered = [...callRequestsData];
   if (subjectFilter) {
-    // filter by subject (you could also filter by client_name or phone_number if desired)
-    where.subject = { contains: subjectFilter, mode: "insensitive" };
+    filtered = filtered.filter(c =>
+      c.subject.toLowerCase().includes(subjectFilter.toLowerCase())
+    );
   }
 
-  // 4. Fetch data from callrequest table
-  const [call_requests, total] = await prisma.$transaction([
-    prisma.callrequest.findMany({
-      where,
-      take: ITEM_PER_PAGE,
-      skip: ITEM_PER_PAGE * (pageNum - 1),
-      orderBy: { time_requested: "desc" },
-    }),
-    prisma.callrequest.count({ where }),
-  ]);
+  // Sort by time_requested descending
+  filtered.sort((a, b) => new Date(b.time_requested).getTime() - new Date(a.time_requested).getTime());
 
-  // 5. Modal selection (if you want to show details in a modal)
+  // Paginate
+  const total = filtered.length;
+  const call_requests = filtered.slice(
+    ITEM_PER_PAGE * (pageNum - 1),
+    ITEM_PER_PAGE * pageNum
+  );
+
+  // Modal selection
   const idx = parseInt(detail ?? "-1", 10);
-  const selected =
-    idx >= 0 && idx < call_requests.length ? call_requests[idx] : null;
+  const selected = idx >= 0 && idx < call_requests.length ? call_requests[idx] : null;
   const callData: CallRequestData | null = selected
     ? {
         clientName: selected.client_name,
         phone: selected.phone_number,
         subject: selected.subject,
         timeRequested: selected.time_requested,
-        // If you had additional fields, include here.
       }
     : null;
 
-  // 6. Render
   return (
     <main className={styles.main}>
       <div className={styles.container}>
-        {/* Title */}
         <TitleBar title="Call Requests" />
 
-        {/* (Optional) Search input could be placed above the table if desired */}
-
-        {/* Table */}
         <Table
           columns={[
             { header: "Client Name", accessor: "client_name" },
@@ -91,20 +77,16 @@ export default async function NewCallRequests({
                 ]
               : []),
           ]}
-          // Prisma returns fields matching model names, e.g. client_name, phone_number, subject, time_requested
-          data={call_requests as CallRequestModel[]}
+          data={call_requests}
           renderRow={(item, idx) => (
             <tr
               key={item.id}
               className={`${styles.row} ${styles.hoverHighlight}`}
             >
-              {/* Client Name with link to open detail modal */}
               <td className={styles.cell}>
                 <Link
                   href={`?detail=${idx}&page=${pageNum}${
-                    subjectFilter
-                      ? `&search=${encodeURIComponent(subjectFilter)}`
-                      : ""
+                    subjectFilter ? `&search=${encodeURIComponent(subjectFilter)}` : ""
                   }`}
                   scroll={false}
                   className={styles.link}
@@ -112,14 +94,8 @@ export default async function NewCallRequests({
                   {item.client_name}
                 </Link>
               </td>
-
-              {/* Phone */}
               <td className={styles.cell}>{item.phone_number}</td>
-
-              {/* Subject */}
               <td className={styles.cell}>{item.subject}</td>
-
-              {/* Requested At */}
               <td className={styles.cell}>
                 {new Intl.DateTimeFormat("en-US", {
                   year: "numeric",
@@ -129,22 +105,11 @@ export default async function NewCallRequests({
                   minute: "2-digit",
                 }).format(item.time_requested)}
               </td>
-
               {role === "admin" && (
                 <td className={`${styles.cell} ${styles.hideOnMobile}`}>
                   <div className={styles.actions}>
-                    {/* Update: ensure your FormContainer can handle callrequest table */}
-                    <FormContainer
-                      table="callrequest"
-                      type="update"
-                      data={item}
-                    />
-                    {/* Delete */}
-                    <FormContainer
-                      table="callrequest"
-                      type="delete"
-                      id={item.id}
-                    />
+                    <FormContainer table="callrequest" type="update" data={item} />
+                    <FormContainer table="callrequest" type="delete" id={item.id} />
                   </div>
                 </td>
               )}
@@ -152,20 +117,10 @@ export default async function NewCallRequests({
           )}
         />
 
-        {/* Pagination */}
-        <Pagination
-          page={pageNum}
-          count={total}
-          // basePath="/dashboard/list/call-requests"
-        />
-        {/* Note: adjust Pagination to preserve searchParams if needed */}
+        <Pagination page={pageNum} count={total} />
       </div>
 
-      {/* Detail Modal */}
-      {callData && (
-        // You need to implement CallRequestView to accept isOpen & data
-        <CallRequestView isOpen={true} data={callData} />
-      )}
+      {callData && <CallRequestView isOpen={true} data={callData} />}
     </main>
   );
 }

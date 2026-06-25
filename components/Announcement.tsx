@@ -1,20 +1,11 @@
 // Announcement.tsx
-import prisma from "@/lib/prisma";
+import { announcements } from "@/lib/dummyData";
 import styles from "./Announcement.module.scss";
 
 const Announcements = async () => {
-  // ------------------------------------------------------ const { userId, sessionClaims } = auth();
   const role = "admin";
 
-  const data = await prisma.announcement.findMany({
-    take: 3,
-    orderBy: { date: "desc" },
-    // where: {
-    //   ...(role !== "admin" && {
-    //     OR: [{ classId: null }],
-    //   }),
-    // },
-  });
+  const data = announcements.slice(0, 3);
 
   return (
     <div className={styles.container}>

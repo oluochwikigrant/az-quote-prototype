@@ -2,52 +2,34 @@
 
 import { revalidatePath } from "next/cache";
 import { StudentSchema } from "./formValidationSchemas";
-import prisma from "./prisma";
-import { clerkClient } from "@/lib/clerkServerMocks";
+import { students as mockStudents } from "./dummyData";
 
 type CurrentState = { success: boolean; error: boolean };
+
+// In-memory student store
+let studentData = [...mockStudents];
+let nextStudentId = studentData.length + 1;
 
 export const createStudent = async (
   currentState: CurrentState,
   data: StudentSchema
 ) => {
   try {
-    // const classItem = await pAZrisma.renamedclass.findUnique({
-    //   where: { id: data.classId },
-    //   include: { _count: { select: { student: true } } },
-    // });
-
-    // if (classItem && classItem.capacity === classItem._count.student) {
-    //   return { success: false, error: true };
-    // }
-
-    //Await the clerkClient() function to get the actual client instance
-    const client = await clerkClient();
-    const user = await client.users.createUser({
+    const newStudent = {
+      id: `stu${nextStudentId++}`,
       username: data.username,
-      password: data.password,
-      firstName: data.name,
-      lastName: data.surname,
-      publicMetadata: { role: "admin" },
-    });
-
-    await prisma.student.create({
-      data: {
-        id: user.id,
-        username: data.username,
-        name: data.name,
-        surname: data.surname,
-        email: data.email || null,
-        phone: data.phone || null,
-        address: data.address,
-        img: data.img || null,
-        bloodType: data.bloodType,
-        sex: data.sex,
-        birthday: data.birthday,
-      },
-    });
-
-    // revalidatePath("/list/students");
+      name: data.name,
+      surname: data.surname,
+      email: data.email || null,
+      phone: data.phone || null,
+      address: data.address,
+      img: data.img || null,
+      bloodType: data.bloodType,
+      sex: data.sex,
+      birthday: data.birthday,
+      createdAt: new Date(),
+    };
+    studentData.push(newStudent as any);
     return { success: true, error: false };
   } catch (err) {
     console.log(err);
@@ -63,21 +45,10 @@ export const updateStudent = async (
     return { success: false, error: true };
   }
   try {
-    //Await the clerkClient() function to get the actual client instance
-    const client = await clerkClient();
-    const user = await client.users.updateUser(data.id, {
-      username: data.username,
-      ...(data.password !== "" && { password: data.password }),
-      firstName: data.name,
-      lastName: data.surname,
-    });
-
-    await prisma.student.update({
-      where: {
-        id: data.id,
-      },
-      data: {
-        ...(data.password !== "" && { password: data.password }),
+    const idx = studentData.findIndex(s => s.id === data.id);
+    if (idx !== -1) {
+      studentData[idx] = {
+        ...studentData[idx],
         username: data.username,
         name: data.name,
         surname: data.surname,
@@ -88,9 +59,8 @@ export const updateStudent = async (
         bloodType: data.bloodType,
         sex: data.sex,
         birthday: data.birthday,
-      },
-    });
-    // revalidatePath("/list/students");
+      };
+    }
     return { success: true, error: false };
   } catch (err) {
     console.log(err);
@@ -104,17 +74,10 @@ export const deleteStudent = async (
 ) => {
   const id = data.get("id") as string;
   try {
-    //Await the clerkClient() function to get the actual client instance
-    const client = await clerkClient();
-    await client.users.deleteUser(id);
-
-    await prisma.student.delete({
-      where: {
-        id: id,
-      },
-    });
-
-    // revalidatePath("/list/students");
+    const idx = studentData.findIndex(s => s.id === id);
+    if (idx !== -1) {
+      studentData.splice(idx, 1);
+    }
     return { success: true, error: false };
   } catch (err) {
     console.log(err);

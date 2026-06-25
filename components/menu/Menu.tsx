@@ -3,7 +3,7 @@ import ClientMenu from "./ClientMenu";
 
 const Menu = async () => {
   const user = await currentUser();
-  const role = user?.publicMetadata.role as string;
+  const role = user?.publicMetadata?.role as string || "user";
   return <ClientMenu role={role} />;
 };
 

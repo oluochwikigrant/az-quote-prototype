@@ -1,39 +1,32 @@
 import { NextResponse } from "next/server";
-import { clerkClient } from "@/lib/clerkServerMocks";
-import { revalidatePath } from "next/cache";
+import { users } from "@/lib/dummyData";
+
+// In-memory user store
+let userStore = [...users];
+let nextUserId = userStore.length + 1;
 
 export async function POST(request: Request) {
   try {
     const { firstName, lastName, email, role, password } = await request.json();
 
-    const client = await clerkClient();
-    const user = await client.users.createUser({
+    const newUser = {
+      user_id: `user-${Date.now()}`,
+      system_role: role === "admin" ? 1 : role === "sales" ? 3 : 2,
+      position: role === "admin" ? "Administrator" : role === "sales" ? "Sales" : "User",
+      email: email,
       firstName: firstName || "",
       lastName: lastName || "",
-      emailAddress: [email],
-      publicMetadata: { role },
-      password: password || "",
-    });
+      phone: "",
+      signature: null,
+      passport: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-    revalidatePath("/user/all-users");
-    return NextResponse.json({ userId: user.id }, { status: 201 });
+    userStore.push(newUser as any);
+    return NextResponse.json({ userId: newUser.user_id }, { status: 201 });
   } catch (err: any) {
     console.error("create_user error:", err);
-
-    // If Clerk returned field errors, it will attach an `errors` array:
-    const maybeErrors = (err as any).errors;
-    if (Array.isArray(maybeErrors)) {
-      // Normalize and forward them as a 400
-      const errors = maybeErrors.map((e: any) => ({
-        code: e.code,
-        message: e.message,
-        longMessage: e.longMessage,
-        meta: e.meta,
-      }));
-      return NextResponse.json({ errors }, { status: 400 });
-    }
-
-    // Fallback generic error
     return NextResponse.json(
       {
         errors: [

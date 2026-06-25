@@ -1,9 +1,8 @@
-// app/(dashboard)/list/subscriptions/page.tsx
+// app/(dashboard)/inbox/subscriptions/page.tsx
 
 import React from "react";
-import prisma from "@/lib/prisma";
+import { subscribers as subscribersData, Subscriber } from "@/lib/dummyData";
 import { ITEM_PER_PAGE } from "@/lib/settings";
-import { subscribers as SubscriberModel } from "@/prisma/generated/prisma-client";
 import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
@@ -15,43 +14,40 @@ import Link from "next/link";
 import TitleBar from "@/components/TitleBar";
 
 interface SubscriptionListPageProps {
-  // Next.js 15+: searchParams is a Promise
   searchParams: Promise<{
     page?: string;
     search?: string;
-    subscription?: string; // index for detail modal
+    subscription?: string;
   }>;
 }
 
 export default async function SubscriptionsPage({
   searchParams,
 }: SubscriptionListPageProps) {
-  // 1. Auth & role (adjust as needed)
-  // const { userId, sessionClaims } = auth();
   const role = "admin";
 
-  // 2. Await and destructure searchParams
   const { page = "1", search: searchTerm, subscription } = await searchParams;
   const pageNum = parseInt(page, 10) || 1;
 
-  // 3. Build Prisma filter
-  const where: any = {};
+  // Filter subscribers
+  let filtered = [...subscribersData];
   if (searchTerm) {
-    where.email = { contains: searchTerm, mode: "insensitive" };
+    filtered = filtered.filter(s =>
+      s.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   }
 
-  // 4. Fetch data
-  const [subsList, total] = await prisma.$transaction([
-    prisma.subscribers.findMany({
-      where,
-      take: ITEM_PER_PAGE,
-      skip: ITEM_PER_PAGE * (pageNum - 1),
-      orderBy: { email: "asc" }, // or any ordering; lexicographical by email
-    }),
-    prisma.subscribers.count({ where }),
-  ]);
+  // Sort by email ascending
+  filtered.sort((a, b) => a.email.localeCompare(b.email));
 
-  // 5. Modal selection
+  // Paginate
+  const total = filtered.length;
+  const subsList = filtered.slice(
+    ITEM_PER_PAGE * (pageNum - 1),
+    ITEM_PER_PAGE * pageNum
+  );
+
+  // Modal selection
   const idx = parseInt(subscription ?? "-1", 10);
   const selected = idx >= 0 && idx < subsList.length ? subsList[idx] : null;
   const subscriptionData: SubscriptionData | null = selected
@@ -60,10 +56,9 @@ export default async function SubscriptionsPage({
       }
     : null;
 
-  // Helper to build link preserving page & search
-  const buildDetailHref = (idx: number) => {
+  const buildDetailHref = (idxRow: number) => {
     const params = new URLSearchParams();
-    params.set("subscription", String(idx));
+    params.set("subscription", String(idxRow));
     params.set("page", String(pageNum));
     if (searchTerm) {
       params.set("search", searchTerm);
@@ -74,10 +69,8 @@ export default async function SubscriptionsPage({
   return (
     <main className={styles.main}>
       <div className={styles.container}>
-        {/* Title */}
         <TitleBar title="Subscriptions" />
 
-        {/* Table */}
         <Table
           columns={[
             { header: "Email", accessor: "email" },
@@ -91,13 +84,12 @@ export default async function SubscriptionsPage({
                 ]
               : []),
           ]}
-          data={subsList as SubscriberModel[]}
+          data={subsList}
           renderRow={(item, idxRow) => (
             <tr
               key={item.email}
               className={`${styles.row} ${styles.hoverHighlight}`}
             >
-              {/* Email with link to open detail modal */}
               <td className={styles.cell}>
                 <Link
                   href={buildDetailHref(idxRow)}
@@ -107,16 +99,10 @@ export default async function SubscriptionsPage({
                   {item.email}
                 </Link>
               </td>
-
               {role === "admin" && (
                 <td className={`${styles.cell} ${styles.hideOnMobile}`}>
                   <div className={styles.actions}>
-                    {/* Only delete; updating primary-key email is not typical */}
-                    <FormContainer
-                      table="subscribers"
-                      type="delete"
-                      id={item.email}
-                    />
+                    <FormContainer table="subscribers" type="delete" id={item.email} />
                   </div>
                 </td>
               )}
@@ -124,14 +110,10 @@ export default async function SubscriptionsPage({
           )}
         />
 
-        {/* Pagination */}
         <Pagination page={pageNum} count={total} />
       </div>
 
-      {/* Detail Modal */}
-      {subscriptionData && (
-        <SubscriptionView isOpen={true} data={subscriptionData} />
-      )}
+      {subscriptionData && <SubscriptionView isOpen={true} data={subscriptionData} />}
     </main>
   );
 }

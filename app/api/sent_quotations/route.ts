@@ -1,7 +1,6 @@
-// File: app/api/sent_quotations/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
+import { quotations, quotationItems, payableAccounts } from "@/lib/dummyData";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,49 +9,33 @@ export async function GET(request: NextRequest) {
     const searchFilter = searchParams.get("search") ?? "";
     const page = Math.max(parseInt(pageParam, 10), 1);
 
-    const where: any = {};
+    let filteredItems = [...quotations];
     if (searchFilter) {
-      where.client_name = { contains: searchFilter, mode: "insensitive" };
+      filteredItems = filteredItems.filter(q =>
+        q.client_name.toLowerCase().includes(searchFilter.toLowerCase())
+      );
     }
 
-    const [items, total] = await prisma.$transaction([
-      prisma.quotations.findMany({
-        where,
-        take: ITEM_PER_PAGE,
-        skip: ITEM_PER_PAGE * (page - 1),
-        orderBy: { created_at: "desc" },
-        select: {
-          id: true,
-          quotation_number: true,
-          client_name: true,
-          client_contact: true,
-          created_at: true,
-          description: true,
-        },
-      }),
-      prisma.quotations.count({ where }),
-    ]);
+    const total = filteredItems.length;
+    const items = filteredItems
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(ITEM_PER_PAGE * (page - 1), ITEM_PER_PAGE * page);
 
-    // Serialize Prisma types and BigInts
-    const serializedItems = items.map((item) => {
-      const base = {
-        id: Number(item.id),
-        quotation_number: item.quotation_number,
-        description: item.description,
-        client_name: item.client_name,
-        client_contact: item.client_contact,
-        created_at: item.created_at.toISOString(),
-      };
-
-      return { ...base };
-    });
+    const serializedItems = items.map((item) => ({
+      id: Number(item.id),
+      quotation_number: item.quotation_number,
+      description: item.description,
+      client_name: item.client_name,
+      client_contact: item.client_contact,
+      created_at: item.created_at.toISOString(),
+    }));
 
     return NextResponse.json({
       data: serializedItems,
       pagination: {
         page,
         perPage: ITEM_PER_PAGE,
-        total: Number(total),
+        total: total,
         totalPages: Math.ceil(total / ITEM_PER_PAGE),
       },
     });

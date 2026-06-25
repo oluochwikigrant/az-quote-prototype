@@ -1,155 +1,93 @@
-//clerkServerMocks.ts
+// Simplified mocks for components that reference currentUser
 
-export const createRouteMatcher = (p0: string[]) => {
-  // Always “matches” in mocks
-  return (_req: any) => true;
-};
-
-export const currentUser = async () => ({
-  id: "mock-user-id",
-  emailAddresses: [{ emailAddress: "mock@example.com" }],
-  publicMetadata: { role: "admin" },
-  firstName: "Wicklife",
-  lastName: "Oluoch",
-});
-
-//clerkClientMocks.ts
-
-// --- In‐memory user store ---
-interface MockUser {
+export interface MockUser {
   id: string;
   firstName: string;
   lastName: string;
   username?: string;
-  password?: string;
-  emailAddresses: { emailAddress: string }[];
-  publicMetadata: { role: string; userName?: string };
+  email?: string;
+  emailAddresses?: { emailAddress: string }[];
+  role: string;
+  publicMetadata?: { role: string };
   createdAt: Date;
 }
 
-let FAKE_USERS: MockUser[] = [];
+let mockUsers: MockUser[] = [
+  {
+    id: "user-1",
+    firstName: "Wicklife",
+    lastName: "Oluoch",
+    username: "wicklife",
+    email: "admin@aztechnos.com",
+    emailAddresses: [{ emailAddress: "admin@aztechnos.com" }],
+    role: "admin",
+    publicMetadata: { role: "admin" },
+    createdAt: new Date(),
+  },
+  {
+    id: "user-2",
+    firstName: "John",
+    lastName: "Doe",
+    username: "johndoe",
+    email: "john@aztechnos.com",
+    emailAddresses: [{ emailAddress: "john@aztechnos.com" }],
+    role: "user",
+    publicMetadata: { role: "user" },
+    createdAt: new Date(),
+  },
+];
 
-// simple ID generator
-let nextId = 1;
-const genId = () => `user-${nextId++}`;
+let nextUserId = 3;
 
-// --- Mock client export ---
+export const currentUser = async (): Promise<MockUser> => {
+  return mockUsers[0];
+};
+
 export const clerkClient = async () => ({
   users: {
-    /**
-     * List users with pagination + optional query by email/username
-     */
-    getUserList: async ({
-      limit,
-      offset,
-      query,
-    }: {
-      limit: number;
-      offset: number;
-      query?: string;
-    }) => {
-      let filtered = FAKE_USERS;
+    getUserList: async ({ limit, offset, query }: { limit: number; offset: number; query?: string }) => {
+      let filtered = [...mockUsers];
       if (query) {
-        const q = query.toLowerCase();
-        filtered = filtered.filter(
-          (u) =>
-            u.username?.toLowerCase().includes(q) ||
-            u.emailAddresses.some((e) =>
-              e.emailAddress.toLowerCase().includes(q)
-            )
+        filtered = filtered.filter(u =>
+          u.email?.toLowerCase().includes(query.toLowerCase())
         );
       }
-      const totalCount = filtered.length;
-      const data = filtered.slice(offset, offset + limit);
-      return { data, totalCount };
-    },
-
-    /**
-     * Fetch a single user by ID
-     */
-    getUser: async (userId: string) => {
-      const u = FAKE_USERS.find((u) => u.id === userId);
-      if (!u) throw new Error(`User ${userId} not found`);
-      return { ...u };
-    },
-
-    /**
-     * Update only publicMetadata (e.g. role)
-     */
-    updateUserMetadata: async (_userId: string, { publicMetadata }: any) => {
-      const idx = FAKE_USERS.findIndex((u) => u.id === _userId);
-      if (idx === -1) throw new Error(`User ${_userId} not found`);
-      FAKE_USERS[idx].publicMetadata = {
-        ...FAKE_USERS[idx].publicMetadata,
-        ...publicMetadata,
+      return {
+        data: filtered.slice(offset, offset + limit),
+        totalCount: filtered.length,
       };
-      return { ...FAKE_USERS[idx] };
     },
-
-    /**
-     * Create a new user
-     */
-    createUser: async ({
-      firstName = "",
-      lastName = "",
-      username,
-      password,
-      emailAddress,
-      emailAddresses,
-      publicMetadata = { role: "admin" },
-    }: {
-      firstName?: string;
-      lastName?: string;
-      username?: string;
-      password?: string;
-      emailAddress?: string[];
-      emailAddresses?: string[];
-      publicMetadata?: { role: "admin" };
-    }) => {
-      const id = genId();
-      const emails = emailAddresses || (emailAddress ? emailAddress : []);
+    getUser: async (userId: string): Promise<MockUser | undefined> => {
+      return mockUsers.find(u => u.id === userId);
+    },
+    createUser: async ({ firstName, lastName, username, email, password, emailAddresses, publicMetadata }: any) => {
       const newUser: MockUser = {
-        id,
-        firstName,
-        lastName,
-        username,
-        password,
-        emailAddresses: emails.map((e) => ({ emailAddress: e })),
-        publicMetadata,
+        id: `user-${nextUserId++}`,
+        firstName: firstName || "",
+        lastName: lastName || "",
+        username: username || "",
+        email: (emailAddresses?.[0] || email || ""),
+        emailAddresses: emailAddresses || [{ emailAddress: email || "" }],
+        role: publicMetadata?.role || "user",
+        publicMetadata: publicMetadata || { role: "user" },
         createdAt: new Date(),
       };
-      FAKE_USERS.unshift(newUser);
-      return { ...newUser };
+      mockUsers.unshift(newUser);
+      return newUser;
     },
-
-    /**
-     * Update user fields (username, names, password, etc.)
-     */
-    updateUser: async (
-      userId: string,
-      updates: {
-        firstName?: string;
-        lastName?: string;
-        username?: string;
-        password?: string;
+    updateUser: async (userId: string, updates: any) => {
+      const idx = mockUsers.findIndex(u => u.id === userId);
+      if (idx !== -1) {
+        mockUsers[idx] = { ...mockUsers[idx], ...updates };
+        return mockUsers[idx];
       }
-    ) => {
-      const idx = FAKE_USERS.findIndex((u) => u.id === userId);
-      if (idx === -1) throw new Error(`User ${userId} not found`);
-      FAKE_USERS[idx] = {
-        ...FAKE_USERS[idx],
-        ...updates,
-      };
-      return { ...FAKE_USERS[idx] };
+      return null;
     },
-
-    /**
-     * Delete a user
-     */
     deleteUser: async (userId: string) => {
-      const idx = FAKE_USERS.findIndex((u) => u.id === userId);
-      if (idx === -1) throw new Error(`User ${userId} not found`);
-      FAKE_USERS.splice(idx, 1);
+      const idx = mockUsers.findIndex(u => u.id === userId);
+      if (idx !== -1) {
+        mockUsers.splice(idx, 1);
+      }
       return { id: userId };
     },
   },

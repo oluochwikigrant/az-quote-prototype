@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { Buffer } from "buffer";
+import { users } from "@/lib/dummyData";
 
-// Cleaned up API routes without Clerk
+// In-memory user store for updates
+let userStore = [...users];
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId");
@@ -11,18 +12,13 @@ export async function GET(request: Request) {
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { user_id: userId },
-    });
+    const user = userStore.find(u => u.user_id === userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
     return NextResponse.json(user);
   } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to fetch user" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch user" }, { status: 500 });
   }
 }
 
@@ -34,29 +30,18 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Missing userId" }, { status: 400 });
   }
 
-  const updatePayload: {
-    firstName?: string;
-    lastName?: string;
-    phone?: string;
-    signature?: Buffer;
-  } = {};
-
-  if (typeof firstName === "string") updatePayload.firstName = firstName;
-  if (typeof lastName === "string") updatePayload.lastName = lastName;
-  if (typeof phone === "string") updatePayload.phone = phone;
-  if (typeof signature === "string") {
-    updatePayload.signature = Buffer.from(
-      signature.replace(/^data:.*;base64,/, ""),
-      "base64"
-    );
-  }
-
   try {
-    const updatedUser = await prisma.user.update({
-      where: { user_id: userId },
-      data: updatePayload,
-    });
-    return NextResponse.json(updatedUser);
+    const idx = userStore.findIndex(u => u.user_id === userId);
+    if (idx === -1) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (firstName) userStore[idx].firstName = firstName;
+    if (lastName) userStore[idx].lastName = lastName;
+    if (phone) userStore[idx].phone = phone;
+    if (signature) userStore[idx].signature = signature;
+
+    return NextResponse.json(userStore[idx]);
   } catch (error) {
     return NextResponse.json({ error: "Update failed" }, { status: 500 });
   }

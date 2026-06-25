@@ -42,6 +42,12 @@ const deleteActionMap: Record<Table, DeleteAction> = {
   ): Promise<{ success: boolean; error: boolean }> {
     throw new Error("Function not implemented.");
   },
+  quotations: function (
+    currentState: any,
+    data: FormData
+  ): Promise<{ success: boolean; error: boolean }> {
+    throw new Error("Function not implemented.");
+  },
 };
 
 const StudentForm = dynamic(() => import("./forms/StudentForm"), {
