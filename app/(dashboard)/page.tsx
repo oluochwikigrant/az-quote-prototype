@@ -1,35 +1,25 @@
-// export default AdminPage;
+import StatCard from "@/components/ui/StatCard";
+import PageHeader from "@/components/ui/PageHeader";
+import { getStats } from "@/lib/data/store";
 import styles from "./page.module.scss";
-import Announcements from "@/components/Announcement";
-import InboxCard from "@/components/InboxCard";
 
-const AdminPage = async () => {
+export default async function DashboardPage() {
+  const stats = getStats();
+
   return (
-    <div className={styles.container}>
-      {/* LEFT */}
-      <div className={styles.leftContent}>
-        <div className={styles.userCards}>
-          <h2>Inbox</h2>
-          <InboxCard type="callrequest" />
-          <InboxCard type="quotation_request" />
-          <InboxCard type="enquiry" />
-          <InboxCard type="review" />
-          <InboxCard type="subscription" />
-        </div>
+    <div>
+      <PageHeader title="Dashboard" subtitle="Overview of your business" />
 
-        <div className={styles.userCards}>
-          <h2>Documents</h2>
-          <InboxCard type="quotation" />
-          <InboxCard type="invoice" />
-          <InboxCard type="receipt" />
-          <InboxCard type="delivery_note" />
-        </div>
+      <div className={styles.grid}>
+        <StatCard label="Quotations" count={stats.quotations} href="/documents/quotation" variant="dark" />
+        <StatCard label="Invoices" count={stats.invoices} href="/documents/invoice" variant="blue" />
+        <StatCard label="Receipts" count={stats.receipts} href="/documents/receipt" variant="green" />
+        <StatCard label="Delivery Notes" count={stats.deliveryNotes} href="/documents/delivery_note" variant="amber" />
+        <StatCard label="Quotation Requests" count={stats.quotationRequests} href="/inbox/quotation-requests" variant="rose" />
+        <StatCard label="Call Requests" count={stats.callRequests} href="/inbox/call-requests" variant="dark" />
+        <StatCard label="Reviews" count={stats.reviews} href="/inbox/reviews" variant="blue" />
+        <StatCard label="Subscribers" count={stats.subscribers} href="/inbox/subscriptions" variant="green" />
       </div>
-
-      {/* RIGHT */}
-      <Announcements />
     </div>
   );
-};
-
-export default AdminPage;
+}

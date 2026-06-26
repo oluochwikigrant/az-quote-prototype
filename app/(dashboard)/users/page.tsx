@@ -3,9 +3,10 @@ import PageHeader from "@/components/ui/PageHeader";
 import Table from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
 import ConfirmDelete from "@/components/ui/ConfirmDelete";
+import Badge from "@/components/ui/Badge";
 import styles from "./page.module.scss";
 
-export default async function QuotationRequestsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+export default async function UsersPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const { page = "1" } = await searchParams;
   const pageNum = Math.max(parseInt(page, 10), 1);
 
@@ -13,31 +14,37 @@ export default async function QuotationRequestsPage({ searchParams }: { searchPa
   const protocol = host.includes("localhost") ? "http" : "https";
   const origin = `${protocol}://${host}`;
 
-  const res = await fetch(`${origin}/api/inbox?type=quotation-requests&page=${pageNum}`, { cache: "no-store" });
+  const res = await fetch(`${origin}/api/users?page=${pageNum}`, { cache: "no-store" });
   const { data, pagination } = await res.json();
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     "use server";
-    await fetch(`${origin}/api/inbox?type=quotation-requests&id=${id}`, { method: "DELETE" });
+    await fetch(`${origin}/api/users?id=${id}`, { method: "DELETE" });
   };
 
   return (
     <div>
-      <PageHeader title="Quotation Requests" subtitle="Client quotation submissions" />
+      <PageHeader
+        title="Users"
+        subtitle="Manage system users"
+        action={{ label: "New User", href: "/users/new" }}
+      />
 
       <Table
         columns={[
-          { key: "name", header: "Name" },
+          { key: "name", header: "Name", render: (row: any) => `${row.firstName} ${row.lastName}` },
           { key: "email", header: "Email", hideMobile: true },
+          { key: "role", header: "Role", render: (row: any) => (
+            <Badge variant={row.role === "admin" ? "danger" : row.role === "sales" ? "info" : "default"}>
+              {row.role}
+            </Badge>
+          )},
+          { key: "position", header: "Position", hideMobile: true },
           { key: "phone", header: "Phone", hideMobile: true },
-          { key: "subject", header: "Subject" },
-          { key: "createdAt", header: "Date", render: (row: any) => (
-            new Date(row.createdAt).toLocaleDateString("en-KE")
-          ), hideMobile: true },
           { key: "actions", header: "", render: (row: any) => (
             <ConfirmDelete
-              title="Delete Quotation Request"
-              message={`Delete request from ${row.name}?`}
+              title="Delete User"
+              message={`Delete user ${row.firstName} ${row.lastName}?`}
               onConfirm={() => handleDelete(row.id)}
               trigger={<button className={styles.deleteBtn}>Delete</button>}
             />

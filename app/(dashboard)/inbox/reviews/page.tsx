@@ -1,146 +1,52 @@
-// app/(dashboard)/inbox/reviews/page.tsx
-
-import React from "react";
-import { reviews as reviewsData, Review } from "@/lib/dummyData";
-import { ITEM_PER_PAGE } from "@/lib/settings";
-import FormContainer from "@/components/FormContainer";
-import Pagination from "@/components/Pagination";
-import Table from "@/components/Table";
+import { headers } from "next/headers";
+import PageHeader from "@/components/ui/PageHeader";
+import Table from "@/components/ui/Table";
+import Pagination from "@/components/ui/Pagination";
+import ConfirmDelete from "@/components/ui/ConfirmDelete";
 import styles from "./page.module.scss";
-import ReviewView, { ReviewData } from "@/components/ReviewView";
-import Link from "next/link";
-import TitleBar from "@/components/TitleBar";
 
-interface ReviewListPageProps {
-  searchParams: Promise<{
-    page?: string;
-    search?: string;
-    review?: string;
-  }>;
-}
+export default async function ReviewsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const { page = "1" } = await searchParams;
+  const pageNum = Math.max(parseInt(page, 10), 1);
 
-export default async function ReviewsPage({
-  searchParams,
-}: ReviewListPageProps) {
-  const role = "admin";
+  const host = (await headers()).get("host")!;
+  const protocol = host.includes("localhost") ? "http" : "https";
+  const origin = `${protocol}://${host}`;
 
-  const { page = "1", search: searchTerm, review } = await searchParams;
-  const pageNum = parseInt(page, 10) || 1;
+  const res = await fetch(`${origin}/api/inbox?type=reviews&page=${pageNum}`, { cache: "no-store" });
+  const { data, pagination } = await res.json();
 
-  // Filter reviews
-  let filtered = [...reviewsData];
-  if (searchTerm) {
-    filtered = filtered.filter(
-      r =>
-        (r.clientName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (r.contact?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        r.message.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }
-
-  // Sort by id descending
-  filtered.sort((a, b) => b.id - a.id);
-
-  // Paginate
-  const total = filtered.length;
-  const reviews = filtered.slice(
-    ITEM_PER_PAGE * (pageNum - 1),
-    ITEM_PER_PAGE * pageNum
-  );
-
-  // Modal selection
-  const idx = parseInt(review ?? "-1", 10);
-  const selected = idx >= 0 && idx < reviews.length ? reviews[idx] : null;
-  const reviewData: ReviewData | null = selected
-    ? {
-        clientName: selected.clientName ?? "",
-        contact: selected.contact ?? "",
-        message: selected.message,
-        rating: selected.rating ?? null,
-      }
-    : null;
-
-  const buildDetailHref = (idxRow: number) => {
-    const params = new URLSearchParams();
-    params.set("review", String(idxRow));
-    params.set("page", String(pageNum));
-    if (searchTerm) {
-      params.set("search", searchTerm);
-    }
-    return `?${params.toString()}`;
+  const handleDelete = async (id: number) => {
+    "use server";
+    await fetch(`${origin}/api/inbox?type=reviews&id=${id}`, { method: "DELETE" });
   };
 
   return (
-    <main className={styles.main}>
-      <div className={styles.container}>
-        <TitleBar title="Reviews" />
+    <div>
+      <PageHeader title="Reviews" subtitle="Customer feedback and ratings" />
 
-        <Table
-          columns={[
-            { header: "Client Name", accessor: "clientName" },
-            {
-              header: "Contact",
-              accessor: "contact",
-              hideOnMobile: styles.hideOnMobile,
-            },
-            { header: "Rating", accessor: "rating" },
-            {
-              header: "Message",
-              accessor: "message",
-              hideOnMobile: styles.hideOnMobile,
-            },
-            ...(role === "admin"
-              ? [
-                  {
-                    header: "Actions",
-                    accessor: "actions",
-                    hideOnMobile: styles.hideOnMobile,
-                  },
-                ]
-              : []),
-          ]}
-          data={reviews}
-          renderRow={(item, idxRow) => (
-            <tr
-              key={item.id}
-              className={`${styles.row} ${styles.hoverHighlight}`}
-            >
-              <td className={styles.cell}>
-                <Link
-                  href={buildDetailHref(idxRow)}
-                  scroll={false}
-                  className={styles.link}
-                >
-                  {item.clientName || "—"}
-                </Link>
-              </td>
-              <td className={`${styles.cell} ${styles.hideOnMobile}`}>
-                {item.contact || "—"}
-              </td>
-              <td className={styles.cell}>
-                {item.rating != null ? item.rating : "N/A"}
-              </td>
-              <td className={`${styles.cell} ${styles.hideOnMobile}`}>
-                {item.message.length > 50
-                  ? item.message.slice(0, 50) + "…"
-                  : item.message}
-              </td>
-              {role === "admin" && (
-                <td className={`${styles.cell} ${styles.hideOnMobile}`}>
-                  <div className={styles.actions}>
-                    <FormContainer table="review" type="update" data={item} />
-                    <FormContainer table="review" type="delete" id={item.id} />
-                  </div>
-                </td>
-              )}
-            </tr>
-          )}
-        />
+      <Table
+        columns={[
+          { key: "clientName", header: "Client", render: (row: any) => row.clientName ?? "Anonymous" },
+          { key: "rating", header: "Rating", render: (row: any) => (
+            <span className={styles.stars}>{"★".repeat(row.rating ?? 0)}{"☆".repeat(5 - (row.rating ?? 0))}</span>
+          ) },
+          { key: "message", header: "Message", render: (row: any) => (
+            <span className={styles.message}>{row.message}</span>
+          ) },
+          { key: "actions", header: "", render: (row: any) => (
+            <ConfirmDelete
+              title="Delete Review"
+              message="Delete this review?"
+              onConfirm={() => handleDelete(row.id)}
+              trigger={<button className={styles.deleteBtn}>Delete</button>}
+            />
+          )},
+        ]}
+        data={data}
+      />
 
-        <Pagination page={pageNum} count={total} />
-      </div>
-
-      {reviewData && <ReviewView isOpen={true} data={reviewData} />}
-    </main>
+      <Pagination page={pagination.page} totalPages={pagination.totalPages} />
+    </div>
   );
 }

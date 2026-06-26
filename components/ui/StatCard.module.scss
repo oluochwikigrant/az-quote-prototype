@@ -1,0 +1,56 @@
+.link {
+  text-decoration: none;
+  display: block;
+}
+
+.card {
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  .count {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    opacity: 0.9;
+  }
+
+  &.dark {
+    background: #0f172a;
+    color: #ffffff;
+  }
+
+  &.blue {
+    background: #1e40af;
+    color: #ffffff;
+  }
+
+  &.green {
+    background: #047857;
+    color: #ffffff;
+  }
+
+  &.amber {
+    background: #b45309;
+    color: #ffffff;
+  }
+
+  &.rose {
+    background: #be123c;
+    color: #ffffff;
+  }
+}
