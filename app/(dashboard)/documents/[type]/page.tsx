@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import Link from "next/link";
 import PageHeader from "@/components/ui/PageHeader";
 import SearchBar from "@/components/ui/SearchBar";
 import Table from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
 import Badge from "@/components/ui/Badge";
-import ConfirmDelete from "@/components/ui/ConfirmDelete";
+import DeleteButton from "@/components/ui/DeleteButton";
 import { DocumentType } from "@/types";
 import styles from "./page.module.scss";
 
@@ -52,11 +53,6 @@ export default async function DocumentsListPage({ params, searchParams }: Props)
   if (!res.ok) throw new Error("Failed to fetch documents");
   const { data, pagination } = await res.json();
 
-  const handleDelete = async (id: number) => {
-    "use server";
-    await fetch(`${origin}/api/documents?id=${id}`, { method: "DELETE" });
-  };
-
   return (
     <div>
       <PageHeader
@@ -72,7 +68,9 @@ export default async function DocumentsListPage({ params, searchParams }: Props)
       <Table
         columns={[
           { key: "number", header: "Number", render: (row: any) => (
-            <span className={styles.docNumber}>{row.number}</span>
+            <Link href={`/documents/${docType}/${row.id}`} className={styles.docLink}>
+              {row.number}
+            </Link>
           )},
           { key: "clientName", header: "Client" },
           { key: "clientContact", header: "Contact", hideMobile: true },
@@ -85,14 +83,7 @@ export default async function DocumentsListPage({ params, searchParams }: Props)
             new Date(row.createdAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })
           ), hideMobile: true },
           { key: "actions", header: "Actions", render: (row: any) => (
-            <div className={styles.actions}>
-              <ConfirmDelete
-                title="Delete Document"
-                message={`Are you sure you want to delete ${row.number}? This action cannot be undone.`}
-                onConfirm={() => handleDelete(row.id)}
-                trigger={<button className={styles.deleteBtn}>Delete</button>}
-              />
-            </div>
+            <DeleteButton id={row.id} type="documents" />
           )},
         ]}
         data={data}

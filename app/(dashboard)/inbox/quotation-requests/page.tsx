@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import PageHeader from "@/components/ui/PageHeader";
 import Table from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
-import ConfirmDelete from "@/components/ui/ConfirmDelete";
+import DeleteButton from "@/components/ui/DeleteButton";
 import styles from "./page.module.scss";
 
 export default async function QuotationRequestsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
@@ -15,11 +15,6 @@ export default async function QuotationRequestsPage({ searchParams }: { searchPa
 
   const res = await fetch(`${origin}/api/inbox?type=quotation-requests&page=${pageNum}`, { cache: "no-store" });
   const { data, pagination } = await res.json();
-
-  const handleDelete = async (id: number) => {
-    "use server";
-    await fetch(`${origin}/api/inbox?type=quotation-requests&id=${id}`, { method: "DELETE" });
-  };
 
   return (
     <div>
@@ -35,12 +30,7 @@ export default async function QuotationRequestsPage({ searchParams }: { searchPa
             new Date(row.createdAt).toLocaleDateString("en-KE")
           ), hideMobile: true },
           { key: "actions", header: "", render: (row: any) => (
-            <ConfirmDelete
-              title="Delete Quotation Request"
-              message={`Delete request from ${row.name}?`}
-              onConfirm={() => handleDelete(row.id)}
-              trigger={<button className={styles.deleteBtn}>Delete</button>}
-            />
+            <DeleteButton id={row.id} type="inbox" inboxType="quotation-requests" />
           )},
         ]}
         data={data}

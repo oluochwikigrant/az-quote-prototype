@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import PageHeader from "@/components/ui/PageHeader";
 import Table from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
-import ConfirmDelete from "@/components/ui/ConfirmDelete";
+import DeleteButton from "@/components/ui/DeleteButton";
 import styles from "./page.module.scss";
 
 export default async function ReviewsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
@@ -15,11 +15,6 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
 
   const res = await fetch(`${origin}/api/inbox?type=reviews&page=${pageNum}`, { cache: "no-store" });
   const { data, pagination } = await res.json();
-
-  const handleDelete = async (id: number) => {
-    "use server";
-    await fetch(`${origin}/api/inbox?type=reviews&id=${id}`, { method: "DELETE" });
-  };
 
   return (
     <div>
@@ -35,12 +30,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
             <span className={styles.message}>{row.message}</span>
           ) },
           { key: "actions", header: "", render: (row: any) => (
-            <ConfirmDelete
-              title="Delete Review"
-              message="Delete this review?"
-              onConfirm={() => handleDelete(row.id)}
-              trigger={<button className={styles.deleteBtn}>Delete</button>}
-            />
+            <DeleteButton id={row.id} type="inbox" inboxType="reviews" />
           )},
         ]}
         data={data}

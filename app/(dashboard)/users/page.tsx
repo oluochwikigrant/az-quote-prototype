@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import PageHeader from "@/components/ui/PageHeader";
 import Table from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
-import ConfirmDelete from "@/components/ui/ConfirmDelete";
+import DeleteButton from "@/components/ui/DeleteButton";
 import Badge from "@/components/ui/Badge";
 import styles from "./page.module.scss";
 
@@ -16,11 +16,6 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
 
   const res = await fetch(`${origin}/api/users?page=${pageNum}`, { cache: "no-store" });
   const { data, pagination } = await res.json();
-
-  const handleDelete = async (id: string) => {
-    "use server";
-    await fetch(`${origin}/api/users?id=${id}`, { method: "DELETE" });
-  };
 
   return (
     <div>
@@ -42,12 +37,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
           { key: "position", header: "Position", hideMobile: true },
           { key: "phone", header: "Phone", hideMobile: true },
           { key: "actions", header: "", render: (row: any) => (
-            <ConfirmDelete
-              title="Delete User"
-              message={`Delete user ${row.firstName} ${row.lastName}?`}
-              onConfirm={() => handleDelete(row.id)}
-              trigger={<button className={styles.deleteBtn}>Delete</button>}
-            />
+            <DeleteButton id={row.id} type="users" />
           )},
         ]}
         data={data}

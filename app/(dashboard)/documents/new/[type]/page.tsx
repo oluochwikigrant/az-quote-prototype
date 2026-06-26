@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import PageHeader from "@/components/ui/PageHeader";
+import DocumentForm from "@/components/forms/DocumentForm";
 import { DocumentType } from "@/types";
-import styles from "./page.module.scss";
 
 const validTypes: DocumentType[] = ["quotation", "invoice", "receipt", "delivery_note"];
 
@@ -25,16 +26,22 @@ export default async function NewDocumentPage({ params }: Props) {
 
   const docType = type as DocumentType;
 
+  const host = (await headers()).get("host")!;
+  const protocol = host.includes("localhost") ? "http" : "https";
+  const origin = `${protocol}://${host}`;
+
+  const res = await fetch(`${origin}/api/company`, { cache: "no-store" });
+  const { services, payableAccounts } = await res.json();
+
   return (
     <div>
       <PageHeader title={`New ${labels[docType]}`} />
-      <div className={styles.formContainer}>
-        <p className={styles.placeholder}>
-          Document creation form for {labels[docType]}. 
-          This would contain the full POS form with service selection, client details, 
-          item list, charges, payment account, and terms & conditions.
-        </p>
-      </div>
+      <DocumentForm
+        docType={docType}
+        docName={labels[docType]}
+        services={services}
+        payableAccounts={payableAccounts}
+      />
     </div>
   );
 }
