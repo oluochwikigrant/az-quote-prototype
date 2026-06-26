@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ITEM_PER_PAGE } from "@/lib/settings";
-import { quotations, quotationItems, payableAccounts } from "@/lib/dummyData";
+import { getSaleDocuments, getSaleDocumentsCount } from "@/lib/dummyData";
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,21 +9,16 @@ export async function GET(request: NextRequest) {
     const searchFilter = searchParams.get("search") ?? "";
     const page = Math.max(parseInt(pageParam, 10), 1);
 
-    let filteredItems = [...quotations];
-    if (searchFilter) {
-      filteredItems = filteredItems.filter(q =>
-        q.client_name.toLowerCase().includes(searchFilter.toLowerCase())
-      );
-    }
-
-    const total = filteredItems.length;
-    const items = filteredItems
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(ITEM_PER_PAGE * (page - 1), ITEM_PER_PAGE * page);
+    const total = await getSaleDocumentsCount("quotation", searchFilter || undefined);
+    const items = await getSaleDocuments("quotation", {
+      take: ITEM_PER_PAGE,
+      skip: ITEM_PER_PAGE * (page - 1),
+      search: searchFilter || undefined,
+    });
 
     const serializedItems = items.map((item) => ({
       id: Number(item.id),
-      quotation_number: item.quotation_number,
+      quotation_number: item.document_number,
       description: item.description,
       client_name: item.client_name,
       client_contact: item.client_contact,
@@ -35,7 +30,7 @@ export async function GET(request: NextRequest) {
       pagination: {
         page,
         perPage: ITEM_PER_PAGE,
-        total: total,
+        total,
         totalPages: Math.ceil(total / ITEM_PER_PAGE),
       },
     });

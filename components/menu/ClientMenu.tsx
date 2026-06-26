@@ -1,6 +1,6 @@
 // app/components/ClientMenu.tsx
-"use client"; // :contentReference[oaicite:6]{index=6}
-import { useState } from "react"; // Client hook
+"use client";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { BsChevronRight } from "react-icons/bs";
@@ -76,20 +76,20 @@ const menuItems = [
       },
       {
         icon: "/setting.png",
-        label: "Invoice",
+        label: "Invoices",
         href: "/sent/invoice",
         visible: ["admin"],
       },
       {
         icon: "/setting.png",
-        label: "Receipt",
+        label: "Receipts",
         href: "/sent/receipt",
         visible: ["admin"],
       },
       {
         icon: "/setting.png",
-        label: "Delivery Note",
-        href: "/sent/delivery-note",
+        label: "Delivery Notes",
+        href: "/sent/delivery_note",
         visible: ["admin"],
       },
     ],
@@ -119,7 +119,7 @@ const menuItems = [
       {
         icon: "/setting.png",
         label: "Delivery Note",
-        href: "/new/delivery-note",
+        href: "/new/delivery_note",
         visible: ["admin"],
       },
     ],
@@ -143,6 +143,7 @@ const menuItems = [
     ],
   },
 ];
+
 const ClientMenu: React.FC<Props> = ({ role }) => {
   const [expanded, setExpanded] = useState<string | null>(null);
 

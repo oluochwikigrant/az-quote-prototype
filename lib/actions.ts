@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { StudentSchema } from "./formValidationSchemas";
 import { students as mockStudents } from "./dummyData";
 
-type CurrentState = { success: boolean; error: boolean };
+import { deleteSaleDocument } from "./dummyData";
+
+export type CurrentState = { success: boolean; error: boolean };
 
 // In-memory student store
 let studentData = [...mockStudents];
@@ -81,6 +83,24 @@ export const deleteStudent = async (
     return { success: true, error: false };
   } catch (err) {
     console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+// ─── Unified Sale Document Delete Action ────────────────────────────────────
+export const deleteSaleDocumentAction = async (
+  currentState: CurrentState,
+  data: FormData
+): Promise<CurrentState> => {
+  const id = data.get("id") as string;
+  if (!id) return { success: false, error: true };
+
+  try {
+    await deleteSaleDocument(Number(id));
+    revalidatePath("/sent");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error("deleteSaleDocumentAction error:", err);
     return { success: false, error: true };
   }
 };

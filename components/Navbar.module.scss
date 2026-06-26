@@ -18,6 +18,12 @@ $yellow: var(--yellow);
   box-shadow: 0 0 6px rgb(168, 168, 168);
   background-color: $lightGray;
   z-index: 3;
+
+  @media (max-width: 768px) {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
 }
 
 .searchBar {
@@ -40,6 +46,10 @@ $yellow: var(--yellow);
   background: transparent;
   outline: none;
   border: none;
+
+  @media (max-width: 768px) {
+    width: 150px;
+  }
 }
 
 .iconsUserContainer {
@@ -48,6 +58,10 @@ $yellow: var(--yellow);
   gap: 1.5rem;
   justify-content: flex-end;
   width: 100%;
+
+  @media (max-width: 768px) {
+    gap: 1rem;
+  }
 }
 
 .iconContainer {
@@ -61,6 +75,11 @@ $yellow: var(--yellow);
   justify-content: center;
   cursor: pointer;
   padding: 5px;
+
+  @media (max-width: 768px) {
+    width: 30px;
+    height: 30px;
+  }
 
   > * {
     width: 100%;
@@ -82,11 +101,23 @@ $yellow: var(--yellow);
   color: #ffffff;
   border-radius: 50%;
   font-size: 0.75rem;
+
+  @media (max-width: 768px) {
+    width: 16px;
+    height: 16px;
+    font-size: 0.65rem;
+    top: -5px;
+    right: -5px;
+  }
 }
 
 .userInfo {
   display: flex;
   flex-direction: column;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 }
 
 .userName {

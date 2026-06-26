@@ -149,9 +149,12 @@ export interface CompanyDetail {
   secondary_phone: string | null;
 }
 
-export interface Quotation {
+export type DocumentType = "quotation" | "invoice" | "receipt" | "delivery_note";
+
+export interface SaleDocument {
   id: number;
-  quotation_number: string;
+  document_type: DocumentType;
+  document_number: string;
   qr_code: string;
   description: string;
   client_name: string;
@@ -171,9 +174,9 @@ export interface Quotation {
   updated_at: Date | null;
 }
 
-export interface QuotationItem {
+export interface SaleDocumentItem {
   item_id: number;
-  quotation_reference: number | null;
+  document_id: number;
   item_description: string;
   item_quantity: number;
   item_unit_price: number;
@@ -439,11 +442,12 @@ export let companyDetails: CompanyDetail = {
   secondary_phone: "723456789",
 };
 
-// Quotations
-export let quotations: Quotation[] = [
+// Unified Sale Documents (quotation, invoice, receipt, delivery_note)
+export let saleDocuments: SaleDocument[] = [
   {
     id: 1,
-    quotation_number: "QT-ABC123DEF456",
+    document_type: "quotation",
+    document_number: "QT-ABC123DEF456",
     qr_code: "QT-ABC123DEF456",
     description: "Website Development Services",
     client_name: "Client Company Ltd",
@@ -462,30 +466,88 @@ export let quotations: Quotation[] = [
     created_at: now,
     updated_at: null,
   },
+  {
+    id: 2,
+    document_type: "invoice",
+    document_number: "IN-XYZ789ABC012",
+    qr_code: "IN-XYZ789ABC012",
+    description: "IT Consulting Services",
+    client_name: "Tech Solutions Inc",
+    client_address: "Mombasa, Kenya",
+    client_contact: "tech@example.com",
+    labor: 3000,
+    shipping: 0,
+    tax_type: "inclusive",
+    tax_rate: 0.16,
+    terms_conditions: "Payment due within 14 days.",
+    payment_account_enabled: true,
+    payment_account_id: 2,
+    served_by_name: "John Doe",
+    served_by_position: "Sales Manager",
+    served_by_signature: "",
+    created_at: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
+    updated_at: null,
+  },
+  {
+    id: 3,
+    document_type: "receipt",
+    document_number: "RC-123DEF456GHI",
+    qr_code: "RC-123DEF456GHI",
+    description: "Web Hosting Payment",
+    client_name: "Client Company Ltd",
+    client_address: "Nairobi, Kenya",
+    client_contact: "client@example.com",
+    labor: 0,
+    shipping: 0,
+    tax_type: "nill",
+    tax_rate: 0,
+    terms_conditions: "Paid in full. Thank you for your business.",
+    payment_account_enabled: false,
+    payment_account_id: null,
+    served_by_name: "Wicklife Oluoch",
+    served_by_position: "Administrator",
+    served_by_signature: "",
+    created_at: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+    updated_at: null,
+  },
 ];
 
-// Quotation Items
-export let quotationItems: QuotationItem[] = [
+// Sale Document Items
+export let saleDocumentItems: SaleDocumentItem[] = [
   {
     item_id: 1,
-    quotation_reference: 1,
+    document_id: 1,
     item_description: "Website Design",
     item_quantity: 1,
     item_unit_price: 50000,
   },
   {
     item_id: 2,
-    quotation_reference: 1,
+    document_id: 1,
     item_description: "Website Development",
     item_quantity: 1,
     item_unit_price: 100000,
   },
   {
     item_id: 3,
-    quotation_reference: 1,
+    document_id: 1,
     item_description: "Hosting (1 Year)",
     item_quantity: 1,
     item_unit_price: 15000,
+  },
+  {
+    item_id: 4,
+    document_id: 2,
+    item_description: "IT Consulting (Hourly)",
+    item_quantity: 10,
+    item_unit_price: 5000,
+  },
+  {
+    item_id: 5,
+    document_id: 3,
+    item_description: "Annual Web Hosting",
+    item_quantity: 1,
+    item_unit_price: 25000,
   },
 ];
 
@@ -514,6 +576,30 @@ export let termsConditions: TermsCondition[] = [
     created_at: now,
     updated_at: now,
   },
+  {
+    id: 2,
+    service: 1,
+    sale_document_type: 2,
+    terms: "Payment due within 14 days of invoice date.",
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    id: 3,
+    service: 1,
+    sale_document_type: 3,
+    terms: "Paid in full. Goods/services received.",
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    id: 4,
+    service: 1,
+    sale_document_type: 4,
+    terms: "Goods delivered as per order. Please verify contents upon receipt.",
+    created_at: now,
+    updated_at: now,
+  },
 ];
 
 // ============================================================
@@ -525,15 +611,14 @@ let nextAnnouncementId = announcements.length + 1;
 let nextCallRequestId = callRequests.length + 1;
 let nextQuotationRequestId = quotationRequests.length + 1;
 let nextReviewId = reviews.length + 1;
-let nextQuotationId = quotations.length + 1;
-let nextQuotationItemId = quotationItems.length + 1;
+let nextSaleDocumentId = saleDocuments.length + 1;
+let nextSaleDocumentItemId = saleDocumentItems.length + 1;
 
 export const generateId = () => Math.random().toString(36).substring(2, 15);
 
 // Announcement helpers
 export const getAnnouncements = async ({ take, skip, where, orderBy }: { take?: number; skip?: number; where?: any; orderBy?: any } = {}) => {
   let result = [...announcements];
-  // Apply where filter (simplified)
   return result.slice(skip, skip && take ? skip + take : undefined);
 };
 
@@ -662,66 +747,148 @@ export const deleteSubscriber = async (email: string) => {
   if (index !== -1) subscribers.splice(index, 1);
 };
 
-// Quotation helpers
-export const getQuotations = async ({ take, skip, where, orderBy, select }: { take?: number; skip?: number; where?: any; orderBy?: any; select?: any } = {}) => {
-  let result = quotations.map(q => ({
-    ...q,
-    quotation_items: quotationItems.filter(i => i.quotation_reference === q.id),
-    payable_account: q.payment_account_id ? payableAccounts.find(a => a.id === q.payment_account_id) : null,
-  }));
+// ============================================================
+// UNIFIED SALE DOCUMENT CRUD HELPERS
+// ============================================================
+
+export const getSaleDocuments = async (
+  documentType?: DocumentType,
+  { take, skip, search }: { take?: number; skip?: number; search?: string } = {}
+) => {
+  let result = [...saleDocuments];
+  if (documentType) {
+    result = result.filter(d => d.document_type === documentType);
+  }
+  if (search) {
+    const s = search.toLowerCase();
+    result = result.filter(
+      d =>
+        d.client_name.toLowerCase().includes(s) ||
+        d.document_number.toLowerCase().includes(s) ||
+        d.description.toLowerCase().includes(s)
+    );
+  }
+  result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   return result.slice(skip, skip && take ? skip + take : undefined);
 };
 
-export const getQuotationsCount = async ({ where }: { where?: any } = {}) => {
-  return quotations.length;
+export const getSaleDocumentsCount = async (documentType?: DocumentType, search?: string) => {
+  let result = [...saleDocuments];
+  if (documentType) {
+    result = result.filter(d => d.document_type === documentType);
+  }
+  if (search) {
+    const s = search.toLowerCase();
+    result = result.filter(
+      d =>
+        d.client_name.toLowerCase().includes(s) ||
+        d.document_number.toLowerCase().includes(s) ||
+        d.description.toLowerCase().includes(s)
+    );
+  }
+  return result.length;
 };
 
-export const getQuotationById = async (id: number) => {
-  const quotation = quotations.find(q => q.id === id);
-  if (!quotation) return null;
-  return {
-    ...quotation,
-    quotation_items: quotationItems.filter(i => i.quotation_reference === id),
-    payable_account: quotation.payment_account_id ? payableAccounts.find(a => a.id === quotation.payment_account_id) : null,
-  };
+export const getSaleDocumentById = async (id: number) => {
+  const doc = saleDocuments.find(d => d.id === id);
+  if (!doc) return null;
+  const items = saleDocumentItems.filter(i => i.document_id === id);
+  const payableAccount = doc.payment_account_id
+    ? payableAccounts.find(a => a.id === doc.payment_account_id)
+    : null;
+  return { ...doc, items, payable_account: payableAccount };
 };
 
-export const createQuotation = async (data: Partial<Quotation>) => {
-  const newQuotation: Quotation = {
-    id: nextQuotationId++,
-    quotation_number: data.quotation_number || `QT-${generateId()}`,
-    qr_code: data.qr_code || `QT-${generateId()}`,
+export const createSaleDocument = async (data: Partial<SaleDocument>) => {
+  const newDoc: SaleDocument = {
+    id: nextSaleDocumentId++,
+    document_type: data.document_type || "quotation",
+    document_number: data.document_number || `DOC-${generateId().toUpperCase()}`,
+    qr_code: data.qr_code || `QR-${generateId().toUpperCase()}`,
     description: data.description || "",
     client_name: data.client_name || "",
     client_address: data.client_address || null,
     client_contact: data.client_contact || "",
-    labor: data.labor || 0,
-    shipping: data.shipping || 0,
+    labor: data.labor ?? 0,
+    shipping: data.shipping ?? 0,
     tax_type: data.tax_type || "exclusive",
-    tax_rate: data.tax_rate || 0.16,
+    tax_rate: data.tax_rate ?? 0.16,
     terms_conditions: data.terms_conditions || "",
-    payment_account_enabled: data.payment_account_enabled || false,
-    payment_account_id: data.payment_account_id || null,
+    payment_account_enabled: data.payment_account_enabled ?? false,
+    payment_account_id: data.payment_account_id ?? null,
     served_by_name: data.served_by_name || "",
     served_by_position: data.served_by_position || "",
     served_by_signature: data.served_by_signature || "",
     created_at: data.created_at || new Date(),
     updated_at: data.updated_at || null,
   };
-  quotations.push(newQuotation);
-  return newQuotation;
+  saleDocuments.push(newDoc);
+  return newDoc;
 };
 
-export const createQuotationItems = async (items: Partial<QuotationItem>[]) => {
+export const updateSaleDocument = async (id: number, data: Partial<SaleDocument>) => {
+  const index = saleDocuments.findIndex(d => d.id === id);
+  if (index === -1) throw new Error("Document not found");
+  saleDocuments[index] = { ...saleDocuments[index], ...data, updated_at: new Date() };
+  return saleDocuments[index];
+};
+
+export const deleteSaleDocument = async (id: number) => {
+  const index = saleDocuments.findIndex(d => d.id === id);
+  if (index !== -1) {
+    saleDocuments.splice(index, 1);
+    // Also delete associated items
+    const itemIndices: number[] = [];
+    saleDocumentItems.forEach((item, idx) => {
+      if (item.document_id === id) itemIndices.push(idx);
+    });
+    // Remove from highest index to lowest to avoid shifting issues
+    itemIndices.reverse().forEach(idx => saleDocumentItems.splice(idx, 1));
+  }
+};
+
+export const createSaleDocumentItems = async (items: Partial<SaleDocumentItem>[]) => {
   const newItems = items.map(item => ({
-    item_id: nextQuotationItemId++,
-    quotation_reference: item.quotation_reference || null,
+    item_id: nextSaleDocumentItemId++,
+    document_id: item.document_id ?? 0,
     item_description: item.item_description || "",
-    item_quantity: item.item_quantity || 0,
-    item_unit_price: item.item_unit_price || 0,
+    item_quantity: item.item_quantity ?? 0,
+    item_unit_price: item.item_unit_price ?? 0,
   }));
-  quotationItems.push(...newItems);
+  saleDocumentItems.push(...newItems);
   return { count: newItems.length };
+};
+
+export const getSaleDocumentItems = async (documentId: number) => {
+  return saleDocumentItems.filter(i => i.document_id === documentId);
+};
+
+// Legacy quotation helpers (redirect to unified)
+export const getQuotations = async ({ take, skip, where, orderBy, select }: { take?: number; skip?: number; where?: any; orderBy?: any; select?: any } = {}) => {
+  return getSaleDocuments("quotation", { take, skip });
+};
+
+export const getQuotationsCount = async ({ where }: { where?: any } = {}) => {
+  return getSaleDocumentsCount("quotation");
+};
+
+export const getQuotationById = async (id: number) => {
+  return getSaleDocumentById(id);
+};
+
+export const createQuotation = async (data: Partial<any>) => {
+  return createSaleDocument({ ...data, document_type: "quotation" });
+};
+
+export const createQuotationItems = async (items: Partial<any>[]) => {
+  return createSaleDocumentItems(
+    items.map(i => ({
+      document_id: i.quotation_reference,
+      item_description: i.item_description,
+      item_quantity: i.item_quantity,
+      item_unit_price: i.item_unit_price,
+    }))
+  );
 };
 
 // User helpers
@@ -765,24 +932,5 @@ export const $transaction = async <T>(operations: Promise<T>[]): Promise<T[]> =>
 };
 
 
-export { services }
-
-export { payableAccounts }
-
-export { announcements }
-
-export { callRequests, reviews, subscribers, enquiries, quotationRequests }
-
-export { notificationSales }
-
-export { quotations, quotationItems }
-
-export { companyDetails }
-
-export { saleDocumentTypes, termsConditions }
-
-export { users }
-
-export { students }
-
-export { saleDocumentSharedAssets }
+// Legacy exports for compatibility
+export { saleDocuments as quotations, saleDocumentItems as quotationItems }

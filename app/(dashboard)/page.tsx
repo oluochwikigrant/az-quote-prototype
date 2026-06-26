@@ -3,10 +3,7 @@ import styles from "./page.module.scss";
 import Announcements from "@/components/Announcement";
 import InboxCard from "@/components/InboxCard";
 
-const AdminPage = async (props: {
-  searchParams: Promise<{ [key: string]: string | undefined }>;
-}) => {
-  // const searchParams = await props.searchParams;
+const AdminPage = async () => {
   return (
     <div className={styles.container}>
       {/* LEFT */}
@@ -18,6 +15,14 @@ const AdminPage = async (props: {
           <InboxCard type="enquiry" />
           <InboxCard type="review" />
           <InboxCard type="subscription" />
+        </div>
+
+        <div className={styles.userCards}>
+          <h2>Documents</h2>
+          <InboxCard type="quotation" />
+          <InboxCard type="invoice" />
+          <InboxCard type="receipt" />
+          <InboxCard type="delivery_note" />
         </div>
       </div>
 

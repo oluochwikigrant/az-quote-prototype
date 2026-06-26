@@ -13,6 +13,10 @@ $yellow: var(--yellow);
   display: flex;
   flex-direction: row;
 
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+
   // LEFT SIDEBAR
   .sidebar {
     width: 200px;
@@ -21,6 +25,22 @@ $yellow: var(--yellow);
     justify-content: flex-start;
     align-items: center;
     padding: 1rem 0;
+    background: #fff;
+    border-right: 1px solid #e5e7eb;
+    flex-shrink: 0;
+
+    @media (max-width: 768px) {
+      width: 100%;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      border-right: none;
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
 
     .logoLink {
       width: 100%;
@@ -33,6 +53,11 @@ $yellow: var(--yellow);
       text-decoration: none;
       text-transform: uppercase;
       color: $darkBlue;
+
+      @media (max-width: 768px) {
+        width: auto;
+        font-size: 0.9rem;
+      }
     }
   }
 
@@ -43,5 +68,10 @@ $yellow: var(--yellow);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    min-width: 0;
+
+    @media (max-width: 768px) {
+      overflow-y: auto;
+    }
   }
 }

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Dispatch, JSX, SetStateAction, useEffect, useState } from "react";
 import { useActionState } from "react";
 import { toast } from "react-toastify";
-import { deleteStudent } from "@/lib/actions";
+import { deleteStudent, deleteSaleDocumentAction } from "@/lib/actions";
 import { FormContainerProps } from "./FormContainer";
 import styles from "./FormModal.module.scss";
 
@@ -42,12 +42,7 @@ const deleteActionMap: Record<Table, DeleteAction> = {
   ): Promise<{ success: boolean; error: boolean }> {
     throw new Error("Function not implemented.");
   },
-  quotations: function (
-    currentState: any,
-    data: FormData
-  ): Promise<{ success: boolean; error: boolean }> {
-    throw new Error("Function not implemented.");
-  },
+  quotations: deleteSaleDocumentAction,
 };
 
 const StudentForm = dynamic(() => import("./forms/StudentForm"), {

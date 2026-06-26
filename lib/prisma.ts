@@ -32,14 +32,17 @@ export default {
     count: dummyData.getSubscribersCount,
     delete: dummyData.deleteSubscriber,
   },
-  quotations: {
-    findMany: dummyData.getQuotations,
-    findUnique: dummyData.getQuotationById,
-    count: dummyData.getQuotationsCount,
-    create: dummyData.createQuotation,
+  sale_document: {
+    findMany: dummyData.getSaleDocuments,
+    findUnique: dummyData.getSaleDocumentById,
+    count: dummyData.getSaleDocumentsCount,
+    create: dummyData.createSaleDocument,
+    update: dummyData.updateSaleDocument,
+    delete: dummyData.deleteSaleDocument,
   },
-  quotation_items: {
-    createMany: dummyData.createQuotationItems,
+  sale_document_items: {
+    createMany: dummyData.createSaleDocumentItems,
+    findMany: dummyData.getSaleDocumentItems,
   },
   user: {
     findUnique: dummyData.getUserById,

@@ -9,9 +9,7 @@ $lightGray: var(--lightGray);
   width: 100%;
   display: flex;
   flex-direction: column;
-  row-gap: 50px;
   overflow-y: auto;
-  padding: 2rem;
   padding-bottom: 80px;
 }
 
@@ -21,13 +19,19 @@ $lightGray: var(--lightGray);
   flex-direction: column;
   align-items: center;
   row-gap: 50px;
-  padding: 50px 0;
-  background-color: rgb(196, 196, 196);
+  padding: 20px 0;
+  background-color: #7b7c7d;
 
   h1 {
     width: fit-content;
     color: white;
     font-size: 2rem;
     font-family: "Times New Roman", Times, serif;
+    text-align: center;
+    padding: 0 1rem;
+
+    @media (max-width: 640px) {
+      font-size: 1.5rem;
+    }
   }
 }

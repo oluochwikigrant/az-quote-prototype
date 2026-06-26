@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const previewData = await request.json();
 
-    // 4. Generate documentNumber, QRCodeNumber & formatted date
+    // Generate documentNumber, QRCodeNumber & formatted date
     const normalized = previewData.documentName
       .replace(/\s+/g, "_")
       .toLowerCase();
@@ -53,7 +53,6 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // map of PayableAccount fields → labels
       const accountFieldMap: Array<[keyof PayableAccount, string]> = [
         ["payment_method_fkey", "Payment Method"],
         ["bank_name", "Bank Name"],
@@ -63,7 +62,6 @@ export async function POST(request: NextRequest) {
         ["buyGoods_number", "Buy Goods Number"],
       ];
 
-      // build [ { label, value } ] from the account record
       accountDetails = accountFieldMap.reduce<AccountDetail[]>(
         (arr, [field, label]) => {
           const rawValue = account[field];
@@ -76,10 +74,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Terms Conditions. Determine; use default or custom terms
-
+    // Terms Conditions
     if (previewData.useCustomTerms) {
-      // previewData.customConditions must not be empty
       if (!previewData.customConditions?.trim()) {
         return NextResponse.json(
           { error: "Custom terms is empty." },
@@ -88,7 +84,6 @@ export async function POST(request: NextRequest) {
       }
       previewData.termsConditions = previewData.customConditions;
     } else {
-      // Look up the sale_document_type row to get its numeric ID
       const saleTypeRecord = saleDocumentTypes.find(s => s.document_type === previewData.documentType);
 
       if (!saleTypeRecord) {
@@ -101,7 +96,6 @@ export async function POST(request: NextRequest) {
       const serviceId = Number(previewData.service);
       const saleDocTypeId = Number(saleTypeRecord.id);
 
-      // Validate that they really are integers and > 0
       if (
         Number.isNaN(serviceId) ||
         Number.isNaN(saleDocTypeId) ||
@@ -119,20 +113,18 @@ export async function POST(request: NextRequest) {
       );
 
       if (!termsRecord) {
-        // Use default terms if not found
         previewData.termsConditions = "Payment within 30 days. Valid for 90 days from date of issue.";
       } else {
         previewData.termsConditions = termsRecord.terms;
       }
     }
 
-    // Calculate subtotal from previewData.items
+    // Calculate totals
     const subtotal = ItemsData.reduce(
       (sum: number, item: { itemSubTotal: number }) => sum + item.itemSubTotal,
       0
     );
 
-    // Determine tax rate
     let taxRate = 0;
     if (previewData.taxType === "exclusive") {
       taxRate = 0.16;
@@ -141,11 +133,8 @@ export async function POST(request: NextRequest) {
     const labor = previewData.labor ?? 0;
     const shipping = previewData.shipping ?? 0;
 
-    // Calculate VAT
     const vatBase = subtotal + labor + shipping;
     const tax = parseFloat((vatBase * taxRate).toFixed(2));
-
-    // Calculate grand total
     const grandTotal = parseFloat((vatBase + tax).toFixed(2));
 
     const quotePreviewData: QuoteData = {

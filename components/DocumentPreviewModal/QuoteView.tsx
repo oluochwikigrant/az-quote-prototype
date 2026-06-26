@@ -15,27 +15,25 @@ const QuoteView: FC<QuoteViewProps> = ({ isOpen, quoteID }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // quote data + loading/error
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const close = () => {
-    // remove ?quote= from URL
     const params = new URLSearchParams(searchParams.toString());
+    params.delete("doc");
     params.delete("quote");
     const newPath =
       window.location.pathname + (params.toString() ? `?${params}` : "");
     router.push(newPath, { scroll: false });
   };
 
-  // fetch when opened
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
     setError(null);
 
-    fetch(`/api/view_quotation?id=${quoteID}`)
+    fetch(`/api/sale_documents/view?id=${quoteID}`)
       .then(async (res) => {
         const json = await res.json();
         if (!res.ok || !json.success) {
@@ -48,14 +46,12 @@ const QuoteView: FC<QuoteViewProps> = ({ isOpen, quoteID }) => {
       .finally(() => setLoading(false));
   }, [isOpen, quoteID]);
 
-  // ESC closes
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
     if (isOpen) document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [isOpen]);
 
-  // click‑outside closes
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const modal = document.getElementById("quote-modal");
@@ -65,7 +61,6 @@ const QuoteView: FC<QuoteViewProps> = ({ isOpen, quoteID }) => {
     return () => document.removeEventListener("mousedown", onClick);
   }, [isOpen]);
 
-  // lock scroll
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     return () => {

@@ -5,6 +5,7 @@ import {
   subscribers,
   enquiries,
   quotationRequests,
+  saleDocuments,
 } from "@/lib/dummyData";
 import { MdOutlineMoreHoriz } from "react-icons/md";
 import styles from "./InboxCard.module.scss";
@@ -17,7 +18,11 @@ const InboxCard = async ({
     | "review"
     | "subscription"
     | "enquiry"
-    | "quotation_request";
+    | "quotation_request"
+    | "quotation"
+    | "invoice"
+    | "receipt"
+    | "delivery_note";
 }) => {
   const countMap: Record<typeof type, number> = {
     quotation_request: quotationRequests.length,
@@ -25,6 +30,10 @@ const InboxCard = async ({
     review: reviews.length,
     subscription: subscribers.length,
     enquiry: enquiries.length,
+    quotation: saleDocuments.filter(d => d.document_type === "quotation").length,
+    invoice: saleDocuments.filter(d => d.document_type === "invoice").length,
+    receipt: saleDocuments.filter(d => d.document_type === "receipt").length,
+    delivery_note: saleDocuments.filter(d => d.document_type === "delivery_note").length,
   };
 
   const data = countMap[type];
@@ -36,7 +45,7 @@ const InboxCard = async ({
         <MdOutlineMoreHoriz className={styles.moreIcon} />
       </div>
       <div className={styles.count}>{data}</div>
-      <div className={styles.label}>{type}</div>
+      <div className={styles.label}>{type.replace(/_/g, " ")}</div>
     </div>
   );
 };

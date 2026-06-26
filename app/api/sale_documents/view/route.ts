@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSaleDocumentById, payableAccounts } from "@/lib/dummyData";
+import { PayableAccount } from "@/lib/dummyData";
 import {
   QuoteData,
   ItemRecord,
   AccountDetail,
 } from "@/components/pdf_sales/documentDataType";
-import { PayableAccount } from "@/lib/dummyData";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const idParam = url.searchParams.get("id");
   if (!idParam) {
@@ -75,7 +75,6 @@ export async function GET(request: Request) {
 
     const vatBase = subtotal + labor + shipping;
     const tax = parseFloat((vatBase * taxRate).toFixed(2));
-
     const grandTotal = parseFloat((vatBase + tax).toFixed(2));
 
     const docNameMap: Record<string, string> = {
